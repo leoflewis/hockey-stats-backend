@@ -3,3 +3,9 @@
 # Manually managing azure-functions-worker may cause unexpected issues
 
 azure-functions
+joblib
+requests
+pandas
+numpy
+mysql-connector-python==8.1.0
+scikit-learn==1.2.2
