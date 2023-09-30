@@ -17,22 +17,24 @@ def get_angles(x, y):
     return arr
 
 def game_data(game_id, db):
-    data = requests.get("http://statsapi.web.nhl.com/api/v1/game/{}/feed/live".format(game_id)).json()
 
+    data = requests.get("https://api-web.nhle.com/v1/gamecenter/{}/play-by-play".format(game_id)).json()
+    
     #season -> team -> game -> player -> game event
-    awayName = data['gameData']['teams']['away']['triCode']
-    homeName = data['gameData']['teams']['home']['triCode']
-    awayId = data['gameData']['teams']['away']['id']
-    homeId = data['gameData']['teams']['home']['id'] 
-    gameId  = data['gamePk']
-    seasonId  = int(data['gameData']['game']['season'])
-    date = data['gameData']['datetime']['dateTime']
-    gametype = data['gameData']['game']['type']
-    home = data['gameData']['teams']['home']['triCode']
-    away = data['gameData']['teams']['away']['triCode']
+    awayName = data['awayTeam']['abbrev']
+    homeName = data['homeTeam']['abbrev']
+    
+    awayId = data['awayTeam']['id']
+    homeId = data['homeTeam']['id'] 
+    gameId  = data['id']
+    
+    seasonId  = int(data['season'])
+    date = data['gameDate']
+    gametype = data['gameType']
+    
 
     cursor = db.cursor()
-
+    logging.info("done")
     
     vals = (seasonId,)
     sql = "INSERT INTO Season(SeasonID) VALUES(%s)"
@@ -75,123 +77,152 @@ def game_data(game_id, db):
     prev_period = 0
     prev_ev_team = 0
     prev_time = 0
+    homeShots = 0
+    awayShots = 0
+    homeScore = 0
+    awayScore = 0
 
-    for play in data['liveData']['plays']['allPlays']:
-        if(play['result']['eventTypeId'] == 'SHOT' or play['result']['eventTypeId'] == 'MISSED_SHOT' or play['result']['eventTypeId'] == 'GOAL'):
-            players = play['players']
-            for player in players:
-                playerId = player['player']['id']
-                playerName = player['player']['fullName']
+    for play in data['plays']:
+        playType = play['typeDescKey']
+        if(playType == 'shot-on-goal' or playType == 'missed-shot' or playType == 'goal'):
+            logging.info(str(gameId))
+            logging.info(playType)
+            logging.info(play['sortOrder'])
+            EventID = str(gameId) + str(play['sortOrder'])
+            Goalie = None
+            Player1 = None
+            Player2 = None
+            Player3 = None
 
-                vals = (playerId, playerName)
-                sql = "INSERT INTO Player(PlayerId, PlayerName) VALUES(%s, %s)"
+            if 'goalieInNetId' in list(play['details'].keys()):
+                Goalie = play['details']['goalieInNetId']
 
-                if player['playerType'] == 'Goalie' or player['playerType'] == 'Unknown':
-                    goalie = player['player']['id']
-                else:
-                    goalie = None
+            if 'scoringPlayerId' in list(play['details'].keys()):
+                Player1 = play['details']['scoringPlayerId']
+
+            if 'shootingPlayerId' in list(play['details'].keys()):
+                Player1 = play['details']['shootingPlayerId']
+
+            if 'assist1PlayerId' in list(play['details'].keys()):
+                Player2 = play['details']['assist1PlayerId']
+                
+            if 'assist2PlayerId' in list(play['details'].keys()):
+                Player3 = play['details']['assist2PlayerId']
+
+            for player in [Player1, Player2, Player3, Goalie]:
+                if player is not None:
+                    vals = (player, )
+                    sql = "INSERT INTO Player(PlayerId) VALUES(%s)"
+                    try:
+                        cursor.execute(sql, vals)
+                        db.commit()
+                        logging.info(sql)
+                    except mysql.connector.errors.IntegrityError:
+                        logging.info("Id already exists")
+
+
+            eventTeam = play['details']['eventOwnerTeamId']
             
-
-            EventID = str(gameId) + str(play['about']['eventIdx'])
-            EventName = play['result']['eventTypeId'] 
+            EventName = playType
             Game = gameId
             Season = seasonId
-            PeriodTime = play['about']['periodTime']
-            PeriodTimeRemaining = play['about']['periodTimeRemaining']
-            Period = play['about']['period']
-            x = int(play['coordinates']['x'])
-            y = int(play['coordinates']['y'])
+            PeriodTime = play['timeInPeriod']
+            PeriodTimeRemaining = play['timeRemaining']
+            period = play['period']
+            x = int(play['details']['xCoord'])
+            y = int(play['details']['yCoord'])
             origX = x
             origY = y
             xG = ''
-            Player1 = players[0]['player']['id']
-
-            if len(players) > 1 and player['playerType'] != 'Goalie' and player['playerType'] != 'Unknown':
-                Player2 = players[0]['player']['id']
-            else:
-                Player2 = None
-                
-
-            if len(players) > 2 and player['playerType'] != 'Goalie' and player['playerType'] != 'Unknown':
-                Player3 = players[0]['player']['id']
-            else:
-                Player3 = None
-
-
-
-            period = play['about']['period']
-            time = int(play['about']['periodTime'].replace(':', ''))
-            if play['result']['event'] == 'Goal' or play['result']['event'] == 'Shot' or play['result']['event'] == 'Missed Shot':
-                if x < 0:
-                    x = x * -1
-                    y = y * -1
-                        
-                new_angles = get_angles(x, y)
-                new_distance = numpy.sqrt((y - 0)**2 + (x - 89.0)**2)
-                try:
-                    #try to get shot type. missed shots do not have a type but can still have xG
-                    type = play['result']['secondaryType']
-                    if type == 'Wrist Shot':
-                        new_shot = [[x, y, 0, 0, 0, 0, 0, 0, 0, 1, new_angles[0], new_angles[1], new_distance]]
-                    elif type == 'Backhand':
-                        new_shot = [[x, y, 0, 1, 0, 0, 0, 0, 0, 0, new_angles[0], new_angles[1], new_distance]]
-                    elif type == 'Deflected':
-                        new_shot = [[x, y, 0, 0, 1, 0, 0, 0, 0, 0, new_angles[0], new_angles[1], new_distance]]
-                    elif type == 'Slap Shot':
-                        new_shot = [[x, y, 0, 0, 0, 1, 0, 0, 0, 0, new_angles[0], new_angles[1], new_distance]]
-                    elif type == 'Snap Shot':
-                        new_shot = [[x, y, 0, 0, 0, 0, 1, 0, 0, 0, new_angles[0], new_angles[1], new_distance]]
-                    elif type == 'Tip-In':
-                        new_shot = [[x, y, 0, 1, 0, 0, 0, 1, 0, 0, new_angles[0], new_angles[1], new_distance]]
-                    elif type == 'Wrap-around':
-                        new_shot = [[x, y, 0, 0, 0, 0, 0, 0, 1, 0, new_angles[0], new_angles[1], new_distance]]
-                    else:
-                        new_shot = [[x, y, 1, 0, 0, 0, 0, 0, 0, 0, new_angles[0], new_angles[1], new_distance]]
-                except:
-                    # in the event of no shot type given
-                    new_shot = [[x, y, 1, 0, 0, 0, 0, 0, 0, 0, new_angles[0], new_angles[1], new_distance]]                  
-                if period == prev_period and prev_ev_team == play['team']['id'] and prev_play in ['Goal', 'Shot', 'Misses Shot'] and time - prev_time > 300:
-                    new_shot[0].insert(2, 1)
-                else:
-                    new_shot[0].insert(2, 0)
-                new_shot[0].insert(3, 0)
-                new_df = pandas.DataFrame(new_shot, columns=predictors)
-                pred = model.predict_proba(new_df)
-                pred = round(pred[0][1], 4)
-                
-                if play['team']['triCode'] == home:
-                    home_xG += pred
-                if play['team']['triCode'] == away:
-                    away_xG += pred
-
-                xG = pred
-                prev_ev_team = play['team']['id']
             
+            time = int(play['timeInPeriod'].replace(':', ''))
+
+            homeTeamDefendingSide = play['homeTeamDefendingSide']
+            # away team shooting at left side
+            if homeTeamDefendingSide == 'left' and eventTeam == awayId:
+                x = x * -1
+                y = y * -1
+            
+            # home team shooting at left side
+            if homeTeamDefendingSide == 'right' and eventTeam == homeId:
+                x = x * -1
+                y = y * -1
+
+
+
+            new_angles = get_angles(x, y)
+            new_distance = numpy.sqrt((y - 0)**2 + (x - 89.0)**2)
+            try:
+                #try to get shot type. missed shots do not have a type but can still have xG
+                type = play['details']['shotType']
+                if type == 'wrist':
+                    new_shot = [[x, y, 0, 0, 0, 0, 0, 0, 0, 1, new_angles[0], new_angles[1], new_distance]]
+                elif type == 'backhand':
+                    new_shot = [[x, y, 0, 1, 0, 0, 0, 0, 0, 0, new_angles[0], new_angles[1], new_distance]]
+                elif type == 'deflected':
+                    new_shot = [[x, y, 0, 0, 1, 0, 0, 0, 0, 0, new_angles[0], new_angles[1], new_distance]]
+                elif type == 'slap':
+                    new_shot = [[x, y, 0, 0, 0, 1, 0, 0, 0, 0, new_angles[0], new_angles[1], new_distance]]
+                elif type == 'snap':
+                    new_shot = [[x, y, 0, 0, 0, 0, 1, 0, 0, 0, new_angles[0], new_angles[1], new_distance]]
+                elif type == 'tip-in':
+                    new_shot = [[x, y, 0, 1, 0, 0, 0, 1, 0, 0, new_angles[0], new_angles[1], new_distance]]
+                elif type == 'wrap-around':
+                    new_shot = [[x, y, 0, 0, 0, 0, 0, 0, 1, 0, new_angles[0], new_angles[1], new_distance]]
+                else:
+                    new_shot = [[x, y, 1, 0, 0, 0, 0, 0, 0, 0, new_angles[0], new_angles[1], new_distance]]
+            except:
+                # in the event of no shot type given
+                new_shot = [[x, y, 1, 0, 0, 0, 0, 0, 0, 0, new_angles[0], new_angles[1], new_distance]]                  
+            if period == prev_period and prev_ev_team == play['details']['eventOwnerTeamId'] and prev_play in ['goal', 'shot', 'missed-shot'] and time - prev_time > 300:
+                new_shot[0].insert(2, 1)
+            else:
+                new_shot[0].insert(2, 0)
+            new_shot[0].insert(3, 0)
+            new_df = pandas.DataFrame(new_shot, columns=predictors)
+            pred = model.predict_proba(new_df)
+            pred = round(pred[0][1], 4)
+            
+            xG = pred
+            prev_ev_team = play['details']['eventOwnerTeamId']
             prev_period = period
-            prev_play = play['result']['event']
+            prev_play = playType
             prev_time = time
-            eventTeam = play['team']['id']
+            
             concededTeam = ""
+
             if eventTeam == homeId:
                 concededTeam = awayId
+                home_xG += float(pred)
             if eventTeam == awayId:
                 concededTeam = homeId
+                away_xG += float(pred)
+            
+            if playType == 'shot':
+                awayShots = int(play['details']['awaySOG']) + awayScore
+                homeShots = int(play['details']['homeSOG']) + homeScore
+
+            if playType == 'goal':
+                awayScore = int(play['details']['awayScore'])
+                homeScore = int(play['details']['homeScore'])
+
+
             xG = float(xG)
-            logging.info(EventID)
-            vals = (EventID, EventName, Game, Season, PeriodTime, PeriodTimeRemaining, Period, origX, origY, xG, Player1, Player2, Player3, goalie, type, eventTeam, concededTeam)
-            sql = "INSERT INTO GameEvent(EventId, EventName, Game, Season, PeriodTime, PeriodTimeRemaining, Period, X, Y, xG, Player1, Player2, Player3, Goalie, ShotType, EventTeam, ConcededTeam) VALUES(%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)"
+            vals = (EventID, EventName, Game, Season, PeriodTime, PeriodTimeRemaining, period, origX, origY, xG, Player1, Player2, Player3, Goalie, type, eventTeam, concededTeam, homeShots, awayShots, home_xG, away_xG)
+            sql = "INSERT INTO GameEvent(EventId, EventName, Game, Season, PeriodTime, PeriodTimeRemaining, Period, X, Y, xG, Player1, Player2, Player3, Goalie, ShotType, EventTeam, ConcededTeam, HomeShots, AwayShots, HomeXG, AwayXG) VALUES(%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)"
             try:
                 cursor.execute(sql, vals)
                 db.commit()
                 logging.info(sql.format(vals))
             except mysql.connector.errors.IntegrityError:
-                logging.info("Id already exists")
+                logging.info("Game Event Id {} already exists".format(EventID))
+        
+        
 
-    homegoals = data['liveData']['boxscore']['teams']['home']['teamStats']['teamSkaterStats']['goals']
-    awaygoals = data['liveData']['boxscore']['teams']['away']['teamStats']['teamSkaterStats']['goals']
-    homeshots = data['liveData']['boxscore']['teams']['home']['teamStats']['teamSkaterStats']['shots']
-    awayshots = data['liveData']['boxscore']['teams']['away']['teamStats']['teamSkaterStats']['shots']
-    
+    homegoals = data['homeTeam']['score']
+    awaygoals = data['awayTeam']['score']
+    homeshots = data['homeTeam']['sog']
+    awayshots = data['awayTeam']['sog']    
     away_xG = float(round(away_xG, 3))
     home_xG = float(round(home_xG, 3))
 
@@ -199,10 +230,10 @@ def game_data(game_id, db):
     if homegoals > awaygoals:
         home_win = 1
     
-    new_date = date.split("T")
-    logging.info(new_date[0])
-    vals = (gameId, seasonId, homeId, awayId, new_date[0], homegoals, awaygoals, home_xG, away_xG, homeshots, awayshots, gametype, home_win)
-    sql = "INSERT INTO Game(GameId, Season, HomeTeam, AwayTeam, GameDate, HomeScore, AwayScore, HomeXG, AwayXG, HomeShots, AwayShots, GameType, HomeWin) VALUES(%s, %s, %s, %s, STR_TO_DATE(%s, '%Y-%m-%d'), %s, %s, %s, %s, %s, %s, %s)"
+
+    vals = (gameId, seasonId, homeId, awayId, date, homegoals, awaygoals, home_xG, away_xG, homeshots, awayshots, gametype, home_win)
+    sql = "INSERT INTO Game(GameId, Season, HomeTeam, AwayTeam, GameDate, HomeScore, AwayScore, HomeXG, AwayXG, HomeShots, AwayShots, GameType, HomeWin) VALUES(%s, %s, %s, %s, STR_TO_DATE(%s, '%Y-%m-%d'), %s, %s, %s, %s, %s, %s, %s, %s)"
+    logging.info(sql.format(vals))
     logging.info("Game {} homewin {}".format(game_id, home_win))
     try:
         cursor.execute(sql, vals)
@@ -241,16 +272,15 @@ def main(mytimer: func.TimerRequest) -> None:
     today = datetime.now()
     yesterday = (today - timedelta(days = 1)).strftime('%Y-%m-%d')
     logging.info("Searching for games on " + str(yesterday))
-    season = requests.get("https://statsapi.web.nhl.com/api/v1/schedule?&?date={}".format(yesterday)).json()
-
+    season = requests.get("https://api-web.nhle.com/v1/score/{}".format(yesterday)).json()
     if db.is_connected():
         logging.info("Connected to the database")
 
-        dates = season['dates']
-        for date in dates:
-            logging.info(date['date'])
-            games = date['games']
-            for game in games:
-                game_data(game['gamePk'], db)
+        games = season['games']
+        for game in games:
+            logging.info(game['gameDate'])
+            logging.info(game['id'])
+            game_data(game['id'], db)
+
 
         logging.info("Parsed all of yesterdays games") 
