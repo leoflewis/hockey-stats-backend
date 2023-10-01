@@ -45,15 +45,7 @@ def game_data(game_id, db):
     except mysql.connector.errors.IntegrityError:
         logging.info("Id already exists")
 
-    vals = (gameId,)
-    sql = "INSERT INTO Game(GameId) VALUES(%s)"
-
-    try:
-        cursor.execute(sql, vals)
-        db.commit()
-        logging.info(sql)
-    except mysql.connector.errors.IntegrityError:
-        logging.info("Id already exists")
+    
 
     
     vals = (awayId, awayName)
