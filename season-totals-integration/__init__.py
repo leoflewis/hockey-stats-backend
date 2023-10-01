@@ -4,7 +4,12 @@ from mysql.connector import Error
 import azure.functions as func
 import mysql.connector
 
-##TODO deploy this function
+
+teamcodes = {"Wild": 30, "Bruins": 6, "Panthers": 13, "Devils": 1, "Islanders": 2, "Rangers": 3, "Flyers": 4, "Penguins": 5, "Sabres": 6, "Canadiens": 8, "Senators": 9,
+             "Maple Leafs": 9, "Hurricanes": 12, "Lightning": 14, "Capitals": 15, "Blackhawks": 16, "Red Wings": 17, "Predators": 18, "Blues": 19, "Flames": 20, "Oilers": 22, "Canucks": 23,
+             "Ducks": 24, "Stars":25, "Kings": 26, "Sharks": 28, "Blue Jackets": 29, "Jets": 52, "Coyotes": 53, "Golden Knights": 54, "Kraken": 55
+            }
+
 
 def main(mytimer: func.TimerRequest) -> None:
     utc_timestamp = datetime.datetime.utcnow().replace(
@@ -41,45 +46,45 @@ def parse_data(db):
         for row in result:
             id = row[0]
             logging.info("searching player stats")
-            response = requests.get("https://statsapi.web.nhl.com/api/v1/people/{}?expand=person.stats&expand=stats.team&stats=yearByYear&season=20232024&site=en_nhl".format(id)).json()
-            if response['people'][0]['primaryPosition']['code'] != 'G':
-                for stat in response['people'][0]['stats'][0]['splits']:
-                    if stat['season'] == '20222023' and stat['league']['name'] == 'National Hockey League':
+            response = requests.get("https://api-web.nhle.com/v1/player/{}/landing".format(id)).json()
+            if response['position'] != 'G':
+                for stat in response['seasonTotals']:
+                    if stat['season'] == '20232024' and stat['leagueAbbrev'] == 'NHL' and stat['gameTypeId'] == 2:
                         season = stat['season']
-                        teamId = stat['team']['id']
-                        toi = float(stat['stat']['timeOnIce'].replace(":", "."))
-                        assists = stat['stat']['assists']
-                        goals = stat['stat']['goals']
-                        pim = stat['stat']['pim']
-                        shots = stat['stat']['shots']
-                        games = stat['stat']['games']
-                        hits = stat['stat']['hits']
-                        ppg = stat['stat']['powerPlayGoals']
-                        ppp = stat['stat']['powerPlayPoints']
-                        pptoi = float(stat['stat']['powerPlayTimeOnIce'].replace(":", "."))
-                        evtoi = float(stat['stat']['evenTimeOnIce'].replace(":", "."))
-                        fopct = stat['stat']['faceOffPct']
-                        shotpct = stat['stat']['shotPct']
-                        gwg = stat['stat']['gameWinningGoals']
-                        otg = stat['stat']['overTimeGoals']
-                        shg = stat['stat']['shortHandedGoals']
-                        shp = stat['stat']['shortHandedPoints']
-                        shtoi = float(stat['stat']['shortHandedTimeOnIce'].replace(":", "."))
-                        blocks = stat['stat']['blocked']
-                        pm = stat['stat']['plusMinus']
-                        points = stat['stat']['points']
-                        shifts = stat['stat']['shifts']
+                        teamId = teamcodes[response['teamName']]
+                        avgtoi = float(stat['avgToi'].replace(":", "."))
+                        assists = stat['assists']
+                        goals = stat['goals']
+                        pim = stat['pim']
+                        shots = stat['shots']
+                        games = stat['gamesPlayed']
+                        # no more hits 2023 
+                        ppg = stat['powerPlayGoals']
+                        ppp = stat['powerPlayPoints']
+                        # no more pptoi 
+                        # no more evtoi 
+                        fopct = stat['faceoffWinningPctg']
+                        shotpct = ['shootingPctg']
+                        gwg = ['gameWinningGoals']
+                        otg = ['otGoals']
+                        # no more shg 
+                        shp = stat['shorthandedPoints']
+                        # no more shtoi 
+                        # no more blocks 
+                        pm = stat['plusMinus']
+                        points = stat['points']
+                        # no more shifts 
                         try:
                             logging.info("Attempting to update player data")
-                            vals = (toi, assists, goals, pim, shots, games, hits, ppg, ppp, pptoi, evtoi, fopct, shotpct, gwg, otg, shg, shp, shtoi, blocks, pm, points, shifts, today, id, season, teamId)
-                            update = "UPDATE INTO SeasonTotals SET TOI = %s, Assists = %s, Goals= %s, PenMinutes = %s, Shots = %s, GamesPlayed = %s, Hits = %s, PPGoals = %s, PPPoints = %s, PPTOI = %s, EVTOI = %s, FOPct = %s, ShotPct = %s, GWGoals = %s, OTGoals = %s, SHGoals = %s, SHPoints = %s, SHTOI = %s, Blocks = %s, PlusMinus = %s, Points = %s, Shifts = %s, last_updated = %s WHERE PlayerId = %s AND Season = %s and TeamId = %s"
+                            vals = (avgtoi, assists, goals, pim, shots, games, ppg, ppp, fopct, shotpct, gwg, otg, shp, pm, points, today, id, season, teamId)
+                            update = "UPDATE INTO SeasonTotals SET AVGtoi = %s, Assists = %s, Goals= %s, PenMinutes = %s, Shots = %s, GamesPlayed = %s, PPGoals = %s, PPPoints = %s, FOPct = %s, ShotPct = %s, GWGoals = %s, OTGoals = %s, SHPoints = %s, PlusMinus = %s, Points = %s, last_updated = %s WHERE PlayerId = %s AND Season = %s and TeamId = %s"
                             cursor.execute(update, vals)
                             cursor.fetchall()
                             count = cursor.rowcount
                             if count == 0:
                                 logging.info("Nothing to update. Attempting to insert")
-                                vals = (season, id, teamId, toi, assists, goals, pim, shots, games, hits, ppg, ppp, pptoi, evtoi, fopct, shotpct, gwg, otg, shg, shp, shtoi, blocks, pm, points, shifts, today)
-                                insert = "INSERT INTO SeasonTotals(Season, PlayerId, TeamId, TOI, Assists, Goals, PenMinutes, Shots, GamesPlayed, Hits, PPGoals, PPPoints, PPTOI, EVTOI, FOPct, ShotPct, GWGoals, OTGoals, SHGoals, SHPoints, SHTOI, Blocks, PlusMinus, Points, Shifts, last_updated) VALUES(%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)"
+                                vals = (season, id, teamId, avgtoi, assists, goals, pim, shots, games, ppg, ppp, fopct, shotpct, gwg, otg, shp, pm, points, today)
+                                insert = "INSERT INTO SeasonTotals(Season, PlayerId, TeamId, AVGtoi, Assists, Goals, PenMinutes, Shots, GamesPlayed, PPGoals, PPPoints, FOPct, ShotPct, GWGoals, OTGoals, SHPoints, PlusMinus, Points, last_updated) VALUES(%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)"
                                 cursor.execute(insert, vals)
                                 cursor.fetchall()
                                 count = cursor.rowcount
@@ -89,7 +94,7 @@ def parse_data(db):
                             db.commit()
                             
                         except mysql.connector.errors.IntegrityError:
-                            logging.info("Duiplicate key")
+                            logging.info("Duplicate key")
 
     except Error:
         logging.info("Something went wrong.")

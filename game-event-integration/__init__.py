@@ -17,7 +17,6 @@ def get_angles(x, y):
     return arr
 
 def game_data(game_id, db):
-
     data = requests.get("https://api-web.nhle.com/v1/gamecenter/{}/play-by-play".format(game_id)).json()
     
     #season -> team -> game -> player -> game event
@@ -38,6 +37,16 @@ def game_data(game_id, db):
     
     vals = (seasonId,)
     sql = "INSERT INTO Season(SeasonID) VALUES(%s)"
+
+    try:
+        cursor.execute(sql, vals)
+        db.commit()
+        logging.info(sql)
+    except mysql.connector.errors.IntegrityError:
+        logging.info("Id already exists")
+
+    vals = (gameId,)
+    sql = "INSERT INTO Game(GameId) VALUES(%s)"
 
     try:
         cursor.execute(sql, vals)
@@ -231,8 +240,9 @@ def game_data(game_id, db):
         home_win = 1
     
 
-    vals = (gameId, seasonId, homeId, awayId, date, homegoals, awaygoals, home_xG, away_xG, homeshots, awayshots, gametype, home_win)
-    sql = "INSERT INTO Game(GameId, Season, HomeTeam, AwayTeam, GameDate, HomeScore, AwayScore, HomeXG, AwayXG, HomeShots, AwayShots, GameType, HomeWin) VALUES(%s, %s, %s, %s, STR_TO_DATE(%s, '%Y-%m-%d'), %s, %s, %s, %s, %s, %s, %s, %s)"
+    vals = (seasonId, homeId, awayId, date, homegoals, awaygoals, home_xG, away_xG, homeshots, awayshots, gametype, home_win, gameId)
+    sql = """UPDATE Game SET Season = %s SET HomeTeam = %s SET AwayTeam = %s SET GameDate = STR_TO_DATE(%s, '%Y-%m-%d') SET HomeScore = %s SET AwayScore = %s SET HomeXG = %s SET AwayXG = %s 
+    SET HomeShots = %s SET AwayShots = %s SET GameType = %s SET HomeWin = %s WHERE GameId = %s"""
     logging.info(sql.format(vals))
     logging.info("Game {} homewin {}".format(game_id, home_win))
     try:
