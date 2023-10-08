@@ -84,7 +84,7 @@ def game_data(game_id, db):
     awayScore = 0
 
     for play in data['plays']:
-        playType = play['typeDescKey']
+        playType = play['typeDescKey'].upper()
         if(playType == 'shot-on-goal' or playType == 'missed-shot' or playType == 'goal'):
             logging.info(str(gameId))
             logging.info(playType)

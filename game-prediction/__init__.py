@@ -169,8 +169,8 @@ def predictGames():
                     stats = [[homexGDiffToDate, awayxGDiffToDate, homeShotDiffToDate, awayShotDiffToDate, homefenDiffToDate, awayFenDiffToDate, homeGoalDiffToDate, awayGoalDiffToDate]]
                     new_df = pd.DataFrame(stats, columns=predictors)
                     pred = model.predict_proba(new_df)
-                    vals = (gameId, pred)
-                    sql = "INSERT INTO Game(GameId, HomeWinProba) VALUES(%s, %s)"
+                    vals = (gameId, tomorrow, pred)
+                    sql = "INSERT INTO Game(GameId, GameDate, HomeWinProba) VALUES(%s, %s %s)"
 
                     try:
                         cursor.execute(sql, vals)
