@@ -17,6 +17,7 @@ def get_angles(x, y):
     return arr
 
 def game_data(game_id, db):
+    logging.info("Getting game data")
     data = requests.get("https://api-web.nhle.com/v1/gamecenter/{}/play-by-play".format(game_id)).json()
     
     #season -> team -> game -> player -> game event
@@ -33,7 +34,7 @@ def game_data(game_id, db):
     
 
     cursor = db.cursor()
-    logging.info("done")
+
     
     vals = (seasonId,)
     sql = "INSERT INTO Season(SeasonID) VALUES(%s)"
@@ -43,7 +44,7 @@ def game_data(game_id, db):
         db.commit()
         logging.info(sql)
     except mysql.connector.errors.IntegrityError:
-        logging.info("Id already exists")
+        logging.info("Season Id already exists")
 
     
 
@@ -56,7 +57,7 @@ def game_data(game_id, db):
         db.commit()
         logging.info(sql)
     except mysql.connector.errors.IntegrityError:
-        logging.info("Id already exists")
+        logging.info("Team Id already exists")
 
 
     
@@ -68,7 +69,17 @@ def game_data(game_id, db):
         db.commit()
         logging.info(sql)
     except mysql.connector.errors.IntegrityError:
-        logging.info("Id already exists")
+        logging.info("Team Id already exists")
+
+    vals = (gameId, )
+    sql = "INSERT INTO Game(GameId) VALUES(%s)"
+
+    try:
+        cursor.execute(sql, vals)
+        db.commit()
+        logging.info(sql)
+    except mysql.connector.errors.IntegrityError:
+        logging.info("Game Id already exists")
 
 
     type = ''
@@ -83,8 +94,10 @@ def game_data(game_id, db):
     homeScore = 0
     awayScore = 0
 
+    logging.info("Parsing events")
+    logging.info(len(data['plays']))
     for play in data['plays']:
-        playType = play['typeDescKey'].upper()
+        playType = play['typeDescKey']
         if(playType == 'shot-on-goal' or playType == 'missed-shot' or playType == 'goal'):
             logging.info(str(gameId))
             logging.info(playType)
@@ -130,8 +143,12 @@ def game_data(game_id, db):
             PeriodTime = play['timeInPeriod']
             PeriodTimeRemaining = play['timeRemaining']
             period = play['period']
-            x = int(play['details']['xCoord'])
-            y = int(play['details']['yCoord'])
+            try:
+                x = int(play['details']['xCoord'])
+                y = int(play['details']['yCoord'])
+            except: 
+                x = 0
+                y = 0
             origX = x
             origY = y
             xG = ''
@@ -199,14 +216,15 @@ def game_data(game_id, db):
                 concededTeam = homeId
                 away_xG += float(pred)
             
-            if playType == 'shot':
-                awayShots = int(play['details']['awaySOG']) + awayScore
-                homeShots = int(play['details']['homeSOG']) + homeScore
+            if playType == 'shot-on-goal' or playType == 'goal':
+                if eventTeam == awayId:
+                    awayShots = awayShots + 1
+                if eventTeam == homeId:
+                    homeShots = homeShots + 1
 
-            if playType == 'goal':
-                awayScore = int(play['details']['awayScore'])
-                homeScore = int(play['details']['homeScore'])
-
+            if playType == 'shot-on-goal': EventName = 'SHOT'
+            if playType == 'goal': EventName = 'GOAL'
+            if playType == 'missed-shot': EventName = 'MISSED_SHOT'
 
             xG = float(xG)
             vals = (EventID, EventName, Game, Season, PeriodTime, PeriodTimeRemaining, period, origX, origY, xG, Player1, Player2, Player3, Goalie, type, eventTeam, concededTeam, homeShots, awayShots, home_xG, away_xG)
@@ -233,21 +251,22 @@ def game_data(game_id, db):
     
 
     vals = (seasonId, homeId, awayId, date, homegoals, awaygoals, home_xG, away_xG, homeshots, awayshots, gametype, home_win, gameId)
-    sql = """UPDATE Game SET Season = %s SET HomeTeam = %s SET AwayTeam = %s SET GameDate = STR_TO_DATE(%s, '%Y-%m-%d') SET HomeScore = %s SET AwayScore = %s SET HomeXG = %s SET AwayXG = %s 
-    SET HomeShots = %s SET AwayShots = %s SET GameType = %s SET HomeWin = %s WHERE GameId = %s"""
+    sql = """UPDATE Game SET Season = %s, HomeTeam = %s, AwayTeam = %s, GameDate = Date(%s), HomeScore = %s, AwayScore = %s, HomeXG = %s, AwayXG = %s,
+    HomeShots = %s, AwayShots = %s, GameType = %s, HomeWin = %s WHERE GameId = %s"""
+
     logging.info(sql.format(vals))
     logging.info("Game {} homewin {}".format(game_id, home_win))
     try:
         cursor.execute(sql, vals)
         db.commit()
         logging.info(sql)
-    except mysql.connector.errors.IntegrityError:
-        logging.info("Id already exists")
+    except mysql.connector.Error as E:
+        logging.info("There was an issue inserting the game")
+        logging.info(E)
+    
+    logging.info("Finished game")
 
     
-
-            
-
 
 
 def main(mytimer: func.TimerRequest) -> None:
@@ -277,11 +296,13 @@ def main(mytimer: func.TimerRequest) -> None:
     season = requests.get("https://api-web.nhle.com/v1/score/{}".format(yesterday)).json()
     if db.is_connected():
         logging.info("Connected to the database")
+        print("Connected to the database")
 
         games = season['games']
         for game in games:
             logging.info(game['gameDate'])
             logging.info(game['id'])
+            print(game['id'])
             game_data(game['id'], db)
 
 

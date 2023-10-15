@@ -12,8 +12,7 @@ teamcodes = {"Wild": 30, "Bruins": 6, "Panthers": 13, "Devils": 1, "Islanders": 
 
 
 def main(mytimer: func.TimerRequest) -> None:
-    utc_timestamp = datetime.datetime.utcnow().replace(
-        tzinfo=datetime.timezone.utc).isoformat()
+    utc_timestamp = datetime.datetime.utcnow().isoformat()
 
     if mytimer.past_due:
         logging.info('The timer is past due!')
@@ -22,10 +21,10 @@ def main(mytimer: func.TimerRequest) -> None:
 
     try:
         db = mysql.connector.connect(
-            host="localhost",
-            user=os.environ.get("sql-user"),
-            database=os.environ.get("sql-db"),
-            password=os.environ.get("sql-password"),
+            host=os.environ.get("AZURE_MYSQL_HOST"),
+            user=os.environ.get("AZURE_MYSQL_USER"),
+            database=os.environ.get("AZURE_MYSQL_NAME"),
+            password=os.environ.get("AZURE_MYSQL_PASSWORD"),
             port=3306
         )
     except Error as e:

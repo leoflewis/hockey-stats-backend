@@ -12,19 +12,19 @@ model = load('gamePrediction.joblib')
 predictors = ["homexGDiff", "awayxGdiff",  "homeShotDiff",  "awayShotDiff",  "homeFenDiff",  "awayFenDiff",  "homeGoalDiff",  "awayGoalDiff"]
 
 def get_goals(date, home, away, cursor, season):
-    home_awayxG_query = "SELECT count(*) FROM GameEvent e JOIN Game on e.Game = Game.GameId WHERE EventTeam = {} AND GameDate < '{}' and EventName = 'GOAL' AND Season = {} AND Period != 5;".format(home, date, season)
+    home_awayxG_query = "SELECT count(*) FROM GameEvent e JOIN Game on e.Game = Game.GameId WHERE EventTeam = {} AND GameDate < '{}' and EventName = 'GOAL' AND Game.Season = {} AND Period != 5;".format(home, date, season)
     cursor.execute(home_awayxG_query)
     home_xGf = cursor.fetchall()
 
-    away_homexG_query = "SELECT count(*) FROM GameEvent e JOIN Game on e.Game = Game.GameId WHERE EventTeam = {} AND GameDate < '{}' and EventName = 'GOAL' AND Season = {} AND Period != 5;".format(away, date, season)
+    away_homexG_query = "SELECT count(*) FROM GameEvent e JOIN Game on e.Game = Game.GameId WHERE EventTeam = {} AND GameDate < '{}' and EventName = 'GOAL' AND Game.Season = {} AND Period != 5;".format(away, date, season)
     cursor.execute(away_homexG_query)
     away_xGf = cursor.fetchall()
 
-    home_awayxG_query = "SELECT count(*) FROM GameEvent e JOIN Game on e.Game = Game.GameId WHERE ConcededTeam = {} AND GameDate < '{}' and EventName = 'GOAL' AND Season = {} AND Period != 5;".format(home, date, season)
+    home_awayxG_query = "SELECT count(*) FROM GameEvent e JOIN Game on e.Game = Game.GameId WHERE ConcededTeam = {} AND GameDate < '{}' and EventName = 'GOAL' AND Game.Season = {} AND Period != 5;".format(home, date, season)
     cursor.execute(home_awayxG_query)
     home_xGa = cursor.fetchall()
 
-    away_homexG_query = "SELECT count(*) FROM GameEvent e JOIN Game on e.Game = Game.GameId WHERE ConcededTeam = {} AND GameDate < '{}' and EventName = 'GOAL' AND Season = {} AND Period != 5;".format(away, date, season)
+    away_homexG_query = "SELECT count(*) FROM GameEvent e JOIN Game on e.Game = Game.GameId WHERE ConcededTeam = {} AND GameDate < '{}' and EventName = 'GOAL' AND Game.Season = {} AND Period != 5;".format(away, date, season)
     cursor.execute(away_homexG_query)
     away_xGa = cursor.fetchall()
     hxgf = home_xGf[0][0]
@@ -41,19 +41,19 @@ def get_goals(date, home, away, cursor, season):
     return homexGDiffToDate, awayxGDiffToDate
 
 def get_shots(date, home, away, cursor, season):
-    home_awayxG_query = "SELECT count(*) FROM GameEvent e JOIN Game on e.Game = Game.GameId WHERE EventTeam = {} AND GameDate < '{}' and EventName = 'SHOT' AND Season = {} AND Period != 5;".format(home, date, season)
+    home_awayxG_query = "SELECT count(*) FROM GameEvent e JOIN Game on e.Game = Game.GameId WHERE EventTeam = {} AND GameDate < '{}' and EventName = 'SHOT' AND Game.Season = {} AND Period != 5;".format(home, date, season)
     cursor.execute(home_awayxG_query)
     home_xGf = cursor.fetchall()
 
-    away_homexG_query = "SELECT count(*) FROM GameEvent e JOIN Game on e.Game = Game.GameId WHERE EventTeam = {} AND GameDate < '{}' and EventName = 'SHOT' AND Season = {} AND Period != 5;".format(away, date, season)
+    away_homexG_query = "SELECT count(*) FROM GameEvent e JOIN Game on e.Game = Game.GameId WHERE EventTeam = {} AND GameDate < '{}' and EventName = 'SHOT' AND Game.Season = {} AND Period != 5;".format(away, date, season)
     cursor.execute(away_homexG_query)
     away_xGf = cursor.fetchall()
 
-    home_awayxG_query = "SELECT count(*) FROM GameEvent e JOIN Game on e.Game = Game.GameId WHERE ConcededTeam = {} AND GameDate < '{}' and EventName = 'SHOT' AND Season = {} AND Period != 5;".format(home, date, season)
+    home_awayxG_query = "SELECT count(*) FROM GameEvent e JOIN Game on e.Game = Game.GameId WHERE ConcededTeam = {} AND GameDate < '{}' and EventName = 'SHOT' AND Game.Season = {} AND Period != 5;".format(home, date, season)
     cursor.execute(home_awayxG_query)
     home_xGa = cursor.fetchall()
 
-    away_homexG_query = "SELECT count(*) FROM GameEvent e JOIN Game on e.Game = Game.GameId WHERE ConcededTeam = {} AND GameDate < '{}' and EventName = 'SHOT' AND Season = {} AND Period != 5;".format(away, date, season)
+    away_homexG_query = "SELECT count(*) FROM GameEvent e JOIN Game on e.Game = Game.GameId WHERE ConcededTeam = {} AND GameDate < '{}' and EventName = 'SHOT' AND Game.Season = {} AND Period != 5;".format(away, date, season)
     cursor.execute(away_homexG_query)
     away_xGa = cursor.fetchall()
     hxgf = home_xGf[0][0]
@@ -70,19 +70,19 @@ def get_shots(date, home, away, cursor, season):
     return homexGDiffToDate, awayxGDiffToDate
 
 def get_fenwick(date, home, away, cursor, season):
-    home_awayxG_query = "SELECT count(*) FROM GameEvent e JOIN Game on e.Game = Game.GameId WHERE EventTeam = {} AND GameDate < '{}' AND Season = {} AND Period != 5;".format(home, date, season)
+    home_awayxG_query = "SELECT count(*) FROM GameEvent e JOIN Game on e.Game = Game.GameId WHERE EventTeam = {} AND GameDate < '{}' AND Game.Season = {} AND Period != 5;".format(home, date, season)
     cursor.execute(home_awayxG_query)
     home_xGf = cursor.fetchall()
 
-    away_homexG_query = "SELECT count(*) FROM GameEvent e JOIN Game on e.Game = Game.GameId WHERE EventTeam = {} AND GameDate < '{}' AND Season = {} AND Period != 5;".format(away, date, season)
+    away_homexG_query = "SELECT count(*) FROM GameEvent e JOIN Game on e.Game = Game.GameId WHERE EventTeam = {} AND GameDate < '{}' AND Game.Season = {} AND Period != 5;".format(away, date, season)
     cursor.execute(away_homexG_query)
     away_xGf = cursor.fetchall()
 
-    home_awayxG_query = "SELECT count(*) FROM GameEvent e JOIN Game on e.Game = Game.GameId WHERE ConcededTeam = {} AND GameDate < '{}' AND Season = {} AND Period != 5;".format(home, date, season)
+    home_awayxG_query = "SELECT count(*) FROM GameEvent e JOIN Game on e.Game = Game.GameId WHERE ConcededTeam = {} AND GameDate < '{}' AND Game.Season = {} AND Period != 5;".format(home, date, season)
     cursor.execute(home_awayxG_query)
     home_xGa = cursor.fetchall()
 
-    away_homexG_query = "SELECT count(*) FROM GameEvent e JOIN Game on e.Game = Game.GameId WHERE ConcededTeam = {} AND GameDate < '{}' AND Season = {} AND Period != 5;".format(away, date, season)
+    away_homexG_query = "SELECT count(*) FROM GameEvent e JOIN Game on e.Game = Game.GameId WHERE ConcededTeam = {} AND GameDate < '{}' AND Game.Season = {} AND Period != 5;".format(away, date, season)
     cursor.execute(away_homexG_query)
     away_xGa = cursor.fetchall()
     hxgf = home_xGf[0][0]
@@ -99,19 +99,19 @@ def get_fenwick(date, home, away, cursor, season):
     return homexGDiffToDate, awayxGDiffToDate
 
 def get_xg(date, home, away, cursor, season):
-    home_awayxG_query = "SELECT sum(xG) FROM GameEvent e JOIN Game on e.Game = Game.GameId WHERE EventTeam = {} AND GameDate < '{}' AND Season = {} AND Period != 5;".format(home, date, season)
+    home_awayxG_query = "SELECT sum(xG) FROM GameEvent e JOIN Game on e.Game = Game.GameId WHERE EventTeam = {} AND GameDate < '{}' AND Game.Season = {} AND Period != 5;".format(home, date, season)
     cursor.execute(home_awayxG_query)
     home_xGf = cursor.fetchall()
 
-    away_homexG_query = "SELECT sum(xG) FROM GameEvent e JOIN Game on e.Game = Game.GameId WHERE EventTeam = {} AND GameDate < '{}' AND Season = {} AND Period != 5;".format(away, date, season)
+    away_homexG_query = "SELECT sum(xG) FROM GameEvent e JOIN Game on e.Game = Game.GameId WHERE EventTeam = {} AND GameDate < '{}' AND Game.Season = {} AND Period != 5;".format(away, date, season)
     cursor.execute(away_homexG_query)
     away_xGf = cursor.fetchall()
 
-    home_awayxG_query = "SELECT sum(xG) FROM GameEvent e JOIN Game on e.Game = Game.GameId WHERE ConcededTeam = {} AND GameDate < '{}' AND Season = {} AND Period != 5;".format(home, date, season)
+    home_awayxG_query = "SELECT sum(xG) FROM GameEvent e JOIN Game on e.Game = Game.GameId WHERE ConcededTeam = {} AND GameDate < '{}' AND Game.Season = {} AND Period != 5;".format(home, date, season)
     cursor.execute(home_awayxG_query)
     home_xGa = cursor.fetchall()
 
-    away_homexG_query = "SELECT sum(xG) FROM GameEvent e JOIN Game on e.Game = Game.GameId WHERE ConcededTeam = {} AND GameDate < '{}' AND Season = {} AND Period != 5;".format(away, date, season)
+    away_homexG_query = "SELECT sum(xG) FROM GameEvent e JOIN Game on e.Game = Game.GameId WHERE ConcededTeam = {} AND GameDate < '{}' AND Game.Season = {} AND Period != 5;".format(away, date, season)
     cursor.execute(away_homexG_query)
     away_xGa = cursor.fetchall()
     hxgf = home_xGf[0][0]
@@ -146,47 +146,53 @@ def predictGames():
     logging.info("Getting tomorrow date")
     today = datetime.now()
     tomorrow = (today + timedelta(days = 1)).strftime('%Y-%m-%d')
-    response = requests.get("https://api-web.nhle.com/v1/schedule/{}".format(tomorrow))
+    response = requests.get("https://api-web.nhle.com/v1/schedule/{}".format(today)).json()
     games = response['gameWeek'][0]
     if db.is_connected():
-        
         cursor = db.cursor()
-        
+        logging.info("Connected to DB")
         try:
-
-            for game in games:
+            logging.info("Parsing data")
+            for game in games['games']:
                 if game['gameType'] == 2:
                     gameId = game['id']
-                    season = games['season']
-                    homexGDiffToDate, awayxGDiffToDate = get_xg(tomorrow, game[7], game[8], cursor, season)
+                    logging.info(gameId)
+                    season = game['season']
+                    homexGDiffToDate, awayxGDiffToDate = get_xg(tomorrow, game['homeTeam']['id'], game['awayTeam']['id'], cursor, season)
                     
-                    homeShotDiffToDate, awayShotDiffToDate = get_shots(tomorrow, game[7], game[8], cursor, season)
+                    homeShotDiffToDate, awayShotDiffToDate = get_shots(tomorrow, game['homeTeam']['id'], game['awayTeam']['id'], cursor, season)
                     
-                    homeGoalDiffToDate, awayGoalDiffToDate = get_goals(tomorrow, game[7], game[8], cursor, season)
+                    homeGoalDiffToDate, awayGoalDiffToDate = get_goals(tomorrow, game['homeTeam']['id'], game['awayTeam']['id'], cursor, season)
                     
-                    homefenDiffToDate, awayFenDiffToDate = get_fenwick(tomorrow, game[7], game[8], cursor, season)
+                    homefenDiffToDate, awayFenDiffToDate = get_fenwick(tomorrow, game['homeTeam']['id'], game['awayTeam']['id'], cursor, season)
                     
+                    logging.info("Evaluating data")
                     stats = [[homexGDiffToDate, awayxGDiffToDate, homeShotDiffToDate, awayShotDiffToDate, homefenDiffToDate, awayFenDiffToDate, homeGoalDiffToDate, awayGoalDiffToDate]]
                     new_df = pd.DataFrame(stats, columns=predictors)
                     pred = model.predict_proba(new_df)
-                    vals = (gameId, tomorrow, pred)
-                    sql = "INSERT INTO Game(GameId, GameDate, HomeWinProba) VALUES(%s, %s %s)"
-
+                    logging.info(pred)
+                    logging.info(pred[0][1])
+                    season = 20232024
+                    vals = (gameId, pred[0][1], season, tomorrow)
+                    sql = "INSERT INTO Game(GameId, HomeWinProba, Season, GameDate) VALUES(%s,%s,%s,%s);"
+                    logging.info("Attempting to insert")
                     try:
                         cursor.execute(sql, vals)
                         db.commit()
                         logging.info(sql)
-                        logging.info("added row for game: {}".format(game[0]))
-                    except mysql.connector.errors.IntegrityError:
+                        logging.info("Added row for game: {}".format(game[0]))
+                    except Exception as e:
                         logging.info("Error inserting prediction")
+                        logging.info(e)
        
 
-        except mysql.connector.errors.IntegrityError:
+        except Error as e:
             logging.info("Error parsing games or making prediction")
+            logging.info(e)
 
 
 def main(mytimer: func.TimerRequest) -> None:
-    utc_timestamp = datetime.utcnow().replace(tzinfo=datetime.timezone.utc).isoformat()
+    utc_timestamp = datetime.utcnow().isoformat()
 
     if mytimer.past_due:
         logging.info('The timer is past due!')
