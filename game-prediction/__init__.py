@@ -144,8 +144,7 @@ def predictGames():
 
 
     logging.info("Getting tomorrow date")
-    today = datetime.now()
-    tomorrow = (today + timedelta(days = 1)).strftime('%Y-%m-%d')
+    today = datetime.now().strftime('%Y-%m-%d')
     response = requests.get("https://api-web.nhle.com/v1/schedule/{}".format(today)).json()
     games = response['gameWeek'][0]
     if db.is_connected():
@@ -158,13 +157,13 @@ def predictGames():
                     gameId = game['id']
                     logging.info(gameId)
                     season = game['season']
-                    homexGDiffToDate, awayxGDiffToDate = get_xg(tomorrow, game['homeTeam']['id'], game['awayTeam']['id'], cursor, season)
+                    homexGDiffToDate, awayxGDiffToDate = get_xg(today, game['homeTeam']['id'], game['awayTeam']['id'], cursor, season)
                     
-                    homeShotDiffToDate, awayShotDiffToDate = get_shots(tomorrow, game['homeTeam']['id'], game['awayTeam']['id'], cursor, season)
+                    homeShotDiffToDate, awayShotDiffToDate = get_shots(today, game['homeTeam']['id'], game['awayTeam']['id'], cursor, season)
                     
-                    homeGoalDiffToDate, awayGoalDiffToDate = get_goals(tomorrow, game['homeTeam']['id'], game['awayTeam']['id'], cursor, season)
+                    homeGoalDiffToDate, awayGoalDiffToDate = get_goals(today, game['homeTeam']['id'], game['awayTeam']['id'], cursor, season)
                     
-                    homefenDiffToDate, awayFenDiffToDate = get_fenwick(tomorrow, game['homeTeam']['id'], game['awayTeam']['id'], cursor, season)
+                    homefenDiffToDate, awayFenDiffToDate = get_fenwick(today, game['homeTeam']['id'], game['awayTeam']['id'], cursor, season)
                     
                     logging.info("Evaluating data")
                     stats = [[homexGDiffToDate, awayxGDiffToDate, homeShotDiffToDate, awayShotDiffToDate, homefenDiffToDate, awayFenDiffToDate, homeGoalDiffToDate, awayGoalDiffToDate]]
@@ -173,14 +172,14 @@ def predictGames():
                     logging.info(pred)
                     logging.info(pred[0][1])
                     season = 20232024
-                    vals = (gameId, pred[0][1], season, tomorrow)
+                    vals = (gameId, pred[0][1], season, today)
                     sql = "INSERT INTO Game(GameId, HomeWinProba, Season, GameDate) VALUES(%s,%s,%s,%s);"
                     logging.info("Attempting to insert")
                     try:
                         cursor.execute(sql, vals)
                         db.commit()
                         logging.info(sql)
-                        logging.info("Added row for game: {}".format(game[0]))
+                        logging.info("Added row for game: {}".format(gameId))
                     except Exception as e:
                         logging.info("Error inserting prediction")
                         logging.info(e)
