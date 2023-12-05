@@ -240,8 +240,15 @@ def game_data(game_id, db):
 
     homegoals = data['homeTeam']['score']
     awaygoals = data['awayTeam']['score']
-    homeshots = data['homeTeam']['sog']
-    awayshots = data['awayTeam']['sog']    
+
+    homeshots = homeShots
+    if 'sog' in data['homeTeam'].keys():
+        homeshots = data['homeTeam']['sog']
+
+    awayshots = awayShots
+    if 'sog'in data['awayTeam'].keys():
+        awayshots = data['awayTeam']['sog']    
+    
     away_xG = float(round(away_xG, 3))
     home_xG = float(round(home_xG, 3))
 
