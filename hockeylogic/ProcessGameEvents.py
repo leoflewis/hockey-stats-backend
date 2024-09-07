@@ -70,9 +70,7 @@ class ProcessGameEvents():
         homeWin = 0
         if homegoals > awaygoals:
             homeWin = 1
-        self.mysql.UpdateGameDetails(self.seasonId, self.homeId, self.awayId, date, homegoals, awaygoals, home_xG, away_xG, homeshots, awayshots, gametype, homeWin, gameId)
-                
-
+        self.mysql.UpsertGame(self.seasonId, self.homeId, self.awayId, date, homegoals, awaygoals, home_xG, away_xG, homeshots, awayshots, gametype, homeWin, gameId)
 
     def ProcessPlay(self, play, gameId):
         EventID = str(gameId) + str(play['sortOrder'])
@@ -120,7 +118,7 @@ class ProcessGameEvents():
             rebound = True
         else:
             rebound = False
-
+        print("\t", EventID)
         xG = self.xg.Predict((x, y, shotype, rebound))
 
         self.prev_ev_team = play['details']['eventOwnerTeamId']
@@ -146,9 +144,106 @@ class ProcessGameEvents():
         if EventName == 'shot-on-goal': EventName = 'SHOT'
         if EventName == 'goal': EventName = 'GOAL'
         if EventName == 'missed-shot': EventName = 'MISSED_SHOT'
-
         self.mysql.InsertGameEvent(EventID, EventName, gameId, self.seasonId, PeriodTime, PeriodTimeRemaining, period, origX, origY, xG, Player1, Player2, Player3, Goalie, shotype, eventTeam, concededTeam, self.homeShots, self.awayShots, round(self.home_xG, 2), round(self.away_xG, 2))
 
+    def ProcessGameForAPI(self, gameId):
+        gameData = self.nhl.GetGamePlays(gameId)
+    
+        awayId = gameData['awayTeam']['id']
+        homeId = gameData['homeTeam']['id'] 
+
+        home_xG = 0
+        away_xG = 0
+        prev_play = None
+        prev_period = 0
+        prev_ev_team = 0
+        prev_time = 0
+        homeShots = 0
+        awayShots = 0
+        formattedShots = []
+        homeshotsByTime = []
+        awayshotsByTime = []
+        homeXgByTime = []
+        awayXgByTime = []
+        times = []
+
+        for play in gameData['plays']:
+            playType = play['typeDescKey']
+            if(playType == 'shot-on-goal' or playType == 'missed-shot' or playType == 'goal'):
+                eventTeam = play['details']['eventOwnerTeamId']
+                PeriodTime = play['timeInPeriod']
+                period = play['periodDescriptor']['number']
+                try:
+                    x = int(play['details']['xCoord'])
+                    y = int(play['details']['yCoord'])
+                except:
+                    x = 0
+                    y = 0
+                origX = x
+                origY = y
+                xG = ''
+                
+                time = int(play['timeInPeriod'].replace(':', ''))
+
+                homeTeamDefendingSide = play['homeTeamDefendingSide']
+                # away team shooting at left side or home team shooting at left side
+                if (homeTeamDefendingSide == 'left' and eventTeam == awayId) or (homeTeamDefendingSide == 'right' and eventTeam == homeId):
+                    x = x * -1
+                    y = y * -1
+
+                shottype = play['details']['shotType']                 
+                if period == prev_period and prev_ev_team == play['details']['eventOwnerTeamId'] and prev_play in ['goal', 'shot', 'missed-shot'] and time - prev_time > 300:
+                    rebound = True
+                else:
+                    rebound = False
+                
+                xG = self.xg.Predict((x, y, shottype, rebound))
+                
+                prev_ev_team = play['details']['eventOwnerTeamId']
+                prev_period = period
+                prev_play = playType
+                prev_time = time
+
+                if eventTeam == homeId: home_xG += float(xG)
+                if eventTeam == awayId: away_xG += float(xG)
+                
+                if playType == 'shot-on-goal' or playType == 'goal' and period < 5:
+                    if eventTeam == homeId: homeShots = homeShots + 1
+                    elif eventTeam == awayId: awayShots = awayShots + 1  
+                    time = float(PeriodTime.replace(":", "."))
+                    if period == 2: time = time + 20.0
+                    if period == 3: time = time + 40.0
+                    if period == 4: time = time + 60.0 
+                    times.append(round(time, 2))
+                    homeshotsByTime.append(homeShots)
+                    awayshotsByTime.append(awayShots)
+                    homeXgByTime.append(round(home_xG, 2))
+                    awayXgByTime.append(round(away_xG, 2))
+                    
+                xG = round(float(xG), 2)
+
+                x = origX
+                y = origY
+                xG = (xG * 100) + 5
+
+                if eventTeam == homeId: result = 'rgb(255, 99, 132)'
+                else: result = 'rgb(54, 162, 235)'
+
+                if playType == 'goal': result = 'Black'
+
+                if period % 2 == 0:
+                    x = x * -1
+                    y = y * -1
+
+                x = (x * 6) + 600
+                y = ((y * -1) * 6) + 255
+
+                new_shot = {"x":x, "y": y, "xG":xG, "Result": result }
+                formattedShots.append(new_shot)
+        totals = {"homexG": round(home_xG, 2), "awayxg": round(away_xG, 2), "homeShots": homeShots, "awayShots": awayShots} 
+        shotsByTime = {"times": times, "homeShots": homeshotsByTime, "awayShots": awayshotsByTime, "homexG": homeXgByTime, "awayxG": awayXgByTime}
+        message = {"shots": formattedShots, "shotsByTime": shotsByTime, "totals": totals}
+        return message
     
     def GetPlayers(self, details) -> tuple:
         if 'goalieInNetId' in list(details.keys()):

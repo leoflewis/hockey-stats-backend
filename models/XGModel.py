@@ -40,7 +40,8 @@ class XGModel():
 
 
     def GetAngles(self, x, y):
-        num = math.sqrt(((89.0 - x) * (89.0 - x)) + ((y) * (y)))
+        if x == 89 and y == 0: return [0,0]
+        num = math.sqrt(((89.0 - x) * (89.0 - x)) + ((y) * (y))) 
         radians = numpy.arcsin(y/num)
         degrees = (radians * 180.0) / 3.14
         arr = [radians, degrees]

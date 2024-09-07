@@ -4,12 +4,18 @@ sys.path.append(os.getcwd())
 
 from hockeylogic.ProcessGameEvents import ProcessGameEvents
 from interfaces.IMYSQLService import IMYSQLService
+from services.MYSQLService import MYSQLConnection
 from datetime import datetime 
+from services.NHAPIService import NHLApi
 
-mock = IMYSQLService()
+conn = MYSQLConnection()
 
-processor = ProcessGameEvents(sql=mock)
-for day in [datetime(2024, 3, 4), datetime(2024, 3, 5)]:
-    processor.ProcessSeason(day)
-print("done")
-mock.Close()
+nhlAPI = NHLApi()
+processor = ProcessGameEvents(sql=conn) 
+
+for game in nhlAPI.GetRegularSeasonByGame():
+    if game["gameType"] != 2: continue
+    print(game["id"], game["startTimeUTC"])
+    processor.ProcessGame(gameId=game["id"])
+
+conn.Close()

@@ -16,6 +16,9 @@ class IMYSQLService():
         
     def InsertPlayer(self, playerId, playerName, position):
         pass
+
+    def UpsertGame(self, seasonId, homeTeamId, awayTeamId, date, homeScore, awayScore, homeXG, awayXG, homeShots, awayShots, gameType, homeWin, gameId):
+        self.UpdateGameDetails(seasonId, homeTeamId, awayTeamId, date, homeScore, awayScore, homeXG, awayXG, homeShots, awayShots, gameType, homeWin, gameId)
         
     def UpdateGameDetails(self, seasonId, homeTeamId, awayTeamId, date, homeScore, awayScore, homeXG, awayXG, homeShots, awayShots, gameType, homeWin, gameId):
         print("""UPDATE Game SET Season = {}, HomeTeam = {}, AwayTeam = {}, GameDate = Date({}), 

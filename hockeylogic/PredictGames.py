@@ -8,12 +8,11 @@ class GamePredictionEngine():
         self.nhl = NHLApi()
         self.sql = MYSQLConnection()
         self.model = GamePredictionModel()
-        self.today = datetime.now().strftime('%Y-%m-%d')
 
     def ProcessGames(self):
         response = NHLApi.GetTodayGames()
         games = response['gameWeek'][0]
-        
+        self.today = datetime.now().strftime('%Y-%m-%d')
         for game in games['games']:
             if game['gameType'] == 2:
                 gameId = game['id']
@@ -38,6 +37,7 @@ class GamePredictionEngine():
 
         for game in games:
             gameId = game['id']
+            self.today = game['date']
             self.season = game['season']
             self.homeTeamId = game['homeTeam']['id']
             self.awayTeamId = game['awayTeam']['id']
