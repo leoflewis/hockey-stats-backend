@@ -107,56 +107,56 @@ class MYSQLConnection(IMYSQLService):
             return True
     
     def GetGoalsFor(self, team, date, season) -> int:
-        query = "SELECT count(*) FROM GameEvent e JOIN Game on e.Game = Game.GameId WHERE EventTeam = %s AND GameDate < '%s' and EventName = 'GOAL' AND Game.Season = %s AND Period != 5;"
+        query = "SELECT count(*) FROM GameEvent e JOIN Game on e.Game = Game.GameId WHERE EventTeam = %s AND GameDate < %s and EventName = 'GOAL' AND Game.Season = %s AND Period != 5;"
         vals = (team, date, season)
         self.cursor.execute(query, vals)
         gf = self.cursor.fetchall()
         return 0 if not gf[0][0] else gf[0][0]
     
     def GetGoalsAgainst(self, team, date, season) -> int:
-        query = "SELECT count(*) FROM GameEvent e JOIN Game on e.Game = Game.GameId WHERE ConcededTeam = %s AND GameDate < '%s' and EventName = 'GOAL' AND Game.Season = %s AND Period != 5;"
+        query = "SELECT count(*) FROM GameEvent e JOIN Game on e.Game = Game.GameId WHERE ConcededTeam = %s AND GameDate < %s and EventName = 'GOAL' AND Game.Season = %s AND Period != 5;"
         vals = (team, date, season)
         self.cursor.execute(query, vals)
         ga = self.cursor.fetchall()
         return 0 if not ga[0][0] else ga[0][0]  
     
     def GetShotsFor(self, team, date, season) -> int:
-        query = "SELECT count(*) FROM GameEvent e JOIN Game on e.Game = Game.GameId WHERE EventTeam = %s AND GameDate < '%s' and EventName = 'SHOT' AND Game.Season = %s AND Period != 5;"
+        query = "SELECT count(*) FROM GameEvent e JOIN Game on e.Game = Game.GameId WHERE EventTeam = %s AND GameDate < %s and EventName = 'SHOT' AND Game.Season = %s AND Period != 5;"
         vals = (team, date, season)
         self.cursor.execute(query, vals)
         sf = self.cursor.fetchall()
         return 0 if not sf[0][0] else sf[0][0]
     
     def GetShotsAgainst(self, team, date, season) -> int:
-        query = "SELECT count(*) FROM GameEvent e JOIN Game on e.Game = Game.GameId WHERE ConcededTeam = %s AND GameDate < '%s' and EventName = 'SHOT' AND Game.Season = %s AND Period != 5;"
+        query = "SELECT count(*) FROM GameEvent e JOIN Game on e.Game = Game.GameId WHERE ConcededTeam = %s AND GameDate < %s and EventName = 'SHOT' AND Game.Season = %s AND Period != 5;"
         vals = (team, date, season)
         self.cursor.execute(query, vals)
         sa = self.cursor.fetchall()
         return 0 if not sa[0][0] else sa[0][0]
     
     def GetFenwickFor(self, team, date, season) -> int:
-        query = "SELECT count(*) FROM GameEvent e JOIN Game on e.Game = Game.GameId WHERE EventTeam = %s AND GameDate < '%s' AND Game.Season = %s AND Period != 5;"
+        query = "SELECT count(*) FROM GameEvent e JOIN Game on e.Game = Game.GameId WHERE EventTeam = %s AND GameDate < %s AND Game.Season = %s AND Period != 5;"
         vals = (team, date, season)
         self.cursor.execute(query, vals)
         ff = self.cursor.fetchall()
         return 0 if not ff[0][0] else ff[0][0]
 
     def GetFenwickAgainst(self, team, date, season) -> int:
-        query = "SELECT count(*) FROM GameEvent e JOIN Game on e.Game = Game.GameId WHERE ConcededTeam = %s AND GameDate < '%s' AND Game.Season = %s AND Period != 5;"
+        query = "SELECT count(*) FROM GameEvent e JOIN Game on e.Game = Game.GameId WHERE ConcededTeam = %s AND GameDate < %s AND Game.Season = %s AND Period != 5;"
         vals = (team, date, season)
         self.cursor.execute(query, vals)
         fa = self.cursor.fetchall()
         return 0 if not fa[0][0] else fa[0][0]
     
     def GetXGFor(self, team, date, season)-> float:
-        query = "SELECT sum(xG) FROM GameEvent e JOIN Game on e.Game = Game.GameId WHERE EventTeam = %s AND GameDate < '%s' AND Game.Season = %s AND Period != 5;"
+        query = "SELECT sum(xG) FROM GameEvent e JOIN Game on e.Game = Game.GameId WHERE EventTeam = %s AND GameDate < %s AND Game.Season = %s AND Period != 5;"
         vals = (team, date, season)
         self.cursor.execute(query, vals)
         xgf = self.cursor.fetchall()
         return float(0) if not xgf[0][0] else float(xgf[0][0])
     
     def GetXGAgainst(self, team, date, season) -> float:
-        query = "SELECT sum(xG) FROM GameEvent e JOIN Game on e.Game = Game.GameId WHERE ConcededTeam = %s AND GameDate < '%s' AND Game.Season = %s AND Period != 5;"
+        query = "SELECT sum(xG) FROM GameEvent e JOIN Game on e.Game = Game.GameId WHERE ConcededTeam = %s AND GameDate < %s AND Game.Season = %s AND Period != 5;"
         vals = (team, date, season)
         self.cursor.execute(query, vals)
         xga = self.cursor.fetchall()
@@ -489,6 +489,34 @@ class MYSQLConnection(IMYSQLService):
         return self.cursor.fetchall() 
     
     def GetAllGames202324(self):
-        query = "SELECT GameId, GameDate FROM Game WHERE Season = 20232024;"
+        query = "SELECT GameId, GameDate FROM Game WHERE Season = 20232024 ORDER BY GameId DESC;"
         self.cursor.execute(query)
         return self.cursor.fetchall() 
+
+    def GetUnPredictedGames20232024(self):
+        query = "SELECT GameId, GameDate, season, HomeTeam, AwayTeam FROM Game WHERE Season = 20232024 AND HomeWinProba IS NULL ORDER BY GameId;"
+        self.cursor.execute(query)
+        return self.cursor.fetchall()   
+    
+    def UpdateGameWithPrediction(self, gameId, prediction):
+        query = "UPDATE Game SET HomeWinProba = %s WHERE GameId = %s;"
+        vals = (prediction, gameId)
+        try:
+            self.cursor.execute(query, vals)
+        except Exception as error:
+            print(error)
+            print(type(error))
+
+    def GetAllGamesInBatches(self):
+        pageSize = 50
+        pageNum = 0
+        query = "SELECT GameId, GameDate, season, HomeTeam, AwayTeam, HomeWin FROM Game WHERE Season IS NOT NULL Order By GameId LIMIT %s OFFSET %s;"
+        moreData = True
+        while moreData:
+            vals = (pageSize, pageSize * pageNum)
+            self.cursor.execute(query, vals)
+            data = self.cursor.fetchall()
+            if len(data) == 0: moreData = False
+            for row in data: yield row
+            pageNum += 1
+        

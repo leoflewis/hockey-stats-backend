@@ -7,9 +7,9 @@ class GamePredictionModel(IModel):
         self.model = load('gamePrediction.joblib')
         self.predictors = ["homexGDiff", "awayxGdiff",  "homeShotDiff",  "awayShotDiff",  "homeFenDiff",  "awayFenDiff",  "homeGoalDiff",  "awayGoalDiff"]
     
-    def Predict(self, params:tuple):
+    def Predict(self, params:tuple) -> float:
         homexGDiffToDate, awayxGDiffToDate, homeShotDiffToDate, awayShotDiffToDate, homefenDiffToDate,awayFenDiffToDate, homeGoalDiffToDate, awayGoalDiffToDate = params
         stats = [[homexGDiffToDate, awayxGDiffToDate, homeShotDiffToDate, awayShotDiffToDate, homefenDiffToDate, awayFenDiffToDate, homeGoalDiffToDate, awayGoalDiffToDate]]
         new_df = pandas.DataFrame(stats, columns=self.predictors)
         pred = self.model.predict_proba(new_df)
-        return round(pred, 2)
+        return float(round(pred[0][0], 2))

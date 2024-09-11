@@ -6,16 +6,22 @@ from hockeylogic.ProcessGameEvents import ProcessGameEvents
 from interfaces.IMYSQLService import IMYSQLService
 from services.MYSQLService import MYSQLConnection
 from datetime import datetime 
-from services.NHAPIService import NHLApi
+from hockeylogic.PredictGames import GamePredictionEngine
+import pandas 
 
+predictors = ["homexGDiff", "awayxGdiff",  "homeShotDiff",  "awayShotDiff",  "homeFenDiff",  "awayFenDiff",  "homeGoalDiff",  "awayGoalDiff", "result"]
+processor = GamePredictionEngine()
+
+allrows = []
 conn = MYSQLConnection()
+for game in conn.GetAllGamesInBatches():
+    print(game[1])
+    homexGDiffToDate, awayxGDiffToDate, homeShotDiffToDate, awayShotDiffToDate, homeGoalDiffToDate, awayGoalDiffToDate, homefenDiffToDate, awayFenDiffToDate = processor.ProduceParameters(game)
+    stats = [homexGDiffToDate, awayxGDiffToDate, homeShotDiffToDate, awayShotDiffToDate, homefenDiffToDate, awayFenDiffToDate, homeGoalDiffToDate, awayGoalDiffToDate, game[5]]
+    allrows.append(stats)
+print(allrows)
+df = pandas.DataFrame(allrows, columns=predictors)
 
-nhlAPI = NHLApi()
-processor = ProcessGameEvents(sql=conn) 
-
-for game in nhlAPI.GetRegularSeasonByGame():
-    if game["gameType"] != 2: continue
-    print(game["id"], game["startTimeUTC"])
-    processor.ProcessGame(gameId=game["id"])
+df.to_csv("22-23-24-data.csv")
 
 conn.Close()
