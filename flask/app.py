@@ -425,18 +425,14 @@ def get_single_game_shots():
         print(row)
         period = int(row[0])
         time = float(row[1].replace(":", "."))
-        homeShots += int(row[2])
-        awayShots += int(row[3])
-        homeXg += float(row[4])
-        awayXg += float(row[5])
         if period == 2: time = time + 20.0
         if period == 3: time = time + 40.0
         if period == 4: time = time + 60.0 
         times.append(round(time, 2))
-        homeshotsByTime.append(homeShots)
-        awayshotsByTime.append(awayShots)
-        homeXgByTime.append(round(homeXg, 2))
-        awayXgByTime.append(round(awayXg, 2))
+        homeshotsByTime.append(int(row[2]))
+        awayshotsByTime.append(int(row[3]))
+        homeXgByTime.append(round(float(row[4]), 2))
+        awayXgByTime.append(round(float(row[5]), 2))
     shotsByTime = {"times": times, "homeShots": homeshotsByTime, "awayShots": awayshotsByTime, "homexG": homeXgByTime, "awayxG": awayXgByTime}
     return shotsByTime
 
