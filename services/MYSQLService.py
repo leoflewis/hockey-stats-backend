@@ -17,7 +17,12 @@ class MYSQLConnection(IMYSQLService):
         self.cursor = self.db.cursor()
 
     def Connected(self) -> bool:
-        return self.db.is_connected()
+        try:
+            self.Connect()
+            self.Close()
+            return True
+        except:
+            return False
 
     def Close(self):
         self.db.close()
@@ -603,3 +608,17 @@ class MYSQLConnection(IMYSQLService):
             pageNum += 1
         self.Close()
         
+    def GetAllEventsForAGame(self, gameId):
+        query = """SELECT Period, PeriodTime, HomeShots, AwayShots, HomeXG, AwayXG FROM GameEvent
+        WHERE Game = %s
+        ORDER BY Period ASC, PeriodTime;"""
+        vals = (gameId,)
+        try:
+            self.Connect()
+            self.cursor.execute(query, vals)
+            data = self.cursor.fetchall()
+        except Exception as error:
+            print(error)
+            print(type(error))
+        self.Close()
+        return data

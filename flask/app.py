@@ -97,6 +97,10 @@ def index():
                     "/games" : {
                         "parameters": ["id?", "date?"],
                         "returns": "Returns finalized NHL games for given team or date, with win probability if available."
+                    },
+                    "/game-shots" : {
+                        "parameters": ["gameId"],
+                        "returns": "Returns home shots, away shots, home xg and away xg at the moment it happened."
                     }
                 }
             }
@@ -408,6 +412,33 @@ def scoreproxy():
     except Exception as err:
         return jsonify({"message": "There was an error: {}".format(type(err))})
     return gameData if gameData else jsonify({"message": "There was no data."})
+
+@app.route("/game-shots")
+@cross_origin()
+def get_single_game_shots():
+    args = request.args
+    gameId = args.get("gameId")
+    homeshotsByTime, awayshotsByTime, homeXgByTime, awayXgByTime, times = [],[],[],[],[]
+    homeShots, awayShots, homeXg, awayXg = 0,0,0,0
+    data = sql.GetAllEventsForAGame(gameId)
+    for row in data:
+        print(row)
+        period = int(row[0])
+        time = float(row[1].replace(":", "."))
+        homeShots += int(row[2])
+        awayShots += int(row[3])
+        homeXg += float(row[4])
+        awayXg += float(row[5])
+        if period == 2: time = time + 20.0
+        if period == 3: time = time + 40.0
+        if period == 4: time = time + 60.0 
+        times.append(round(time, 2))
+        homeshotsByTime.append(homeShots)
+        awayshotsByTime.append(awayShots)
+        homeXgByTime.append(round(homeXg, 2))
+        awayXgByTime.append(round(awayXg, 2))
+    shotsByTime = {"times": times, "homeShots": homeshotsByTime, "awayShots": awayshotsByTime, "homexG": homeXgByTime, "awayxG": awayXgByTime}
+    return shotsByTime
 
 @app.route("/games")
 @cross_origin()
