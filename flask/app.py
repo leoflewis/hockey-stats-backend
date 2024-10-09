@@ -415,7 +415,7 @@ def scoreproxy():
 def format_shot(x, y, eventTeam, playType, xG, period, homeId):
     if eventTeam == homeId: result = 'rgb(255, 99, 132)'
     else: result = 'rgb(54, 162, 235)'
-
+    xG = (xG * 100) + 5
     if playType == 'goal': result = 'Black'
 
     if period % 2 == 0:
