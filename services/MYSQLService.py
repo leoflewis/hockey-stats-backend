@@ -609,9 +609,30 @@ class MYSQLConnection(IMYSQLService):
         self.Close()
         
     def GetAllEventsForAGame(self, gameId):
-        query = """SELECT Period, PeriodTime, HomeShots, AwayShots, HomeXG, AwayXG FROM GameEvent
-        WHERE Game = %s
-        ORDER BY Period ASC, PeriodTime;"""
+        query = """SELECT Period, PeriodTime, E.HomeShots, E.AwayShots, E.HomeXG, E.AwayXG, x, y, eventteam, eventname, xG, G.HomeTeam
+            FROM GameEvent E
+            JOIN Game G on E.Game = G.GameId
+            WHERE Game = %s
+            ORDER BY Period ASC, PeriodTime;"""
+        vals = (gameId,)
+        try:
+            self.Connect()
+            self.cursor.execute(query, vals)
+            data = self.cursor.fetchall()
+        except Exception as error:
+            print(error)
+            print(type(error))
+        self.Close()
+        return data
+    
+    def GetGoalsForGame(self, gameId):
+        query = """SELECT Period, PeriodTime, Player1 as PlayerId, P.PlayerName as PlayerName, T.TeamName as Team, E.EventTeam, G.HomeTeam
+                FROM GameEvent E
+                JOIN Game G on E.Game = G.GameId
+                JOIN Player P on E.Player1 = P.PlayerId
+                JOIN Team T on E.EventTeam = T.TeamId
+                WHERE Game = %s AND EventName = 'GOAL'
+                ORDER BY Period ASC, PeriodTime;"""
         vals = (gameId,)
         try:
             self.Connect()
