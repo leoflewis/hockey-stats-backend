@@ -351,7 +351,6 @@ def teams():
     except Exception as err:
         return jsonify({"message": "There was an error: {}".format(type(err))})
 
-
 @app.route("/live-game")
 @cross_origin()
 def livegame():      
@@ -413,28 +412,56 @@ def scoreproxy():
         return jsonify({"message": "There was an error: {}".format(type(err))})
     return gameData if gameData else jsonify({"message": "There was no data."})
 
+def format_shot(x, y, eventTeam, playType, xG, period, homeId):
+    if eventTeam == homeId: result = 'rgb(255, 99, 132)'
+    else: result = 'rgb(54, 162, 235)'
+    xG = (xG * 100) + 5
+    if playType == 'goal': result = 'Black'
+
+    if period % 2 == 0:
+        x = x * -1
+        y = y * -1
+
+    x = (x * 6) + 600
+    y = ((y * -1) * 6) + 255
+
+    return {"x":x, "y": y, "xG":xG, "Result": result }
+
 @app.route("/game-shots")
 @cross_origin()
 def get_single_game_shots():
     args = request.args
     gameId = args.get("gameId")
-    homeshotsByTime, awayshotsByTime, homeXgByTime, awayXgByTime, times = [],[],[],[],[]
-    homeShots, awayShots, homeXg, awayXg = 0,0,0,0
+    homeshotsByTime, awayshotsByTime, homeXgByTime, awayXgByTime, times, shots = [],[],[],[],[],[]
     data = sql.GetAllEventsForAGame(gameId)
     for row in data:
-        print(row)
         period = int(row[0])
         time = float(row[1].replace(":", "."))
         if period == 2: time = time + 20.0
         if period == 3: time = time + 40.0
         if period == 4: time = time + 60.0 
         times.append(round(time, 2))
-        homeshotsByTime.append(int(row[2]))
-        awayshotsByTime.append(int(row[3]))
-        homeXgByTime.append(round(float(row[4]), 2))
-        awayXgByTime.append(round(float(row[5]), 2))
-    shotsByTime = {"times": times, "homeShots": homeshotsByTime, "awayShots": awayshotsByTime, "homexG": homeXgByTime, "awayxG": awayXgByTime}
+        homeshotsByTime.append(int(row[2]) if row[2] else 0)
+        awayshotsByTime.append(int(row[3]) if row[3] else 0)
+        homeXgByTime.append(round(float(row[4]), 2) if row[4] else 0)
+        awayXgByTime.append(round(float(row[5]), 2) if row[5] else 0)
+        shots.append(format_shot(row[6], row[7], row[8], row[9], row[10], period, row[11]))
+    shotsByTime = {"times": times, "homeShots": homeshotsByTime, "awayShots": awayshotsByTime, "homexG": homeXgByTime, "awayxG": awayXgByTime, "shots":shots}
     return shotsByTime
+
+@app.route("/game-goals")
+@cross_origin()
+def get_goals():
+    args = request.args
+    gameId = args.get("gameId")
+    data = sql.GetGoalsForGame(gameId)
+    goals = []
+    homeScore, awayScore = 0,0
+    for goal in data:
+        if goal[5] == goal[6]: homeScore += 1
+        else: awayScore += 1
+        goals.append({"Period": goal[0], "PeriodTime":goal[1], "Player1":goal[2], "PlayerName":goal[3], "TeamName":goal[4], "HomeScore":homeScore, "AwayScore":awayScore})
+    return goals
 
 @app.route("/games")
 @cross_origin()
