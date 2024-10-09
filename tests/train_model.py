@@ -5,6 +5,7 @@ from torch import nn
 from torch import optim
 import numpy as np
 import matplotlib.pyplot as plt
+from sklearn.metrics import classification_report
 
 torch.manual_seed(97)
 
@@ -36,11 +37,17 @@ class GameData:
         self.y_test = torch.from_numpy(self.y[2100:].values).float().to('cpu')
 
     def standardize_x(self):
+        np.save('..\\mean.npy', self.x.mean())
+        np.save('..\\stddev.npy', self.x.std())
         self.x = (self.x - self.x.mean()) / self.x.std()
 
     def train_loader(self) -> data_utils.DataLoader:
+        class_sample_count = np.array([len(np.where(self.y[:2100].values == t)[0]) for t in np.unique(self.y[:2100].values)])
+        weight = 1. / class_sample_count
+        samples_weight = torch.from_numpy(np.array([weight[t] for t in self.y[:2100].values]))
+        sampler = data_utils.WeightedRandomSampler(samples_weight, len(self.x_train))
         train = data_utils.TensorDataset(self.x_train, self.y_train)
-        return data_utils.DataLoader(train, batch_size=self.batch_size, shuffle=True)
+        return data_utils.DataLoader(train, batch_size=self.batch_size, sampler=sampler)
     
     def test_loader(self) -> data_utils.DataLoader:
         test = data_utils.TensorDataset(self.x_test, self.y_test)
@@ -84,8 +91,13 @@ class Orchestrator():
                     loss = self.loss_fn(raw_predictions, y.unsqueeze(-1))
                     val_correct += (predictions == y).sum().item()
                 self.val_accuracy.append(val_correct / val_samples)
+                confusion = classification_report(predictions, y)
+                print(confusion)
                 print(f"Epoch {epoch}, {round(val_correct / val_samples, 2)}% validation accuracy, validation loss: {loss.item()}")
-        
+
+        model_scripted = torch.jit.script(self.model)
+        model_scripted.save('..\\GamePredictions-53Epochs-Sampled.pt')
+
     def plot_scores(self):
         step = np.linspace(0, self.epochs, self.epochs * math.ceil(2100/self.batch_size)) # batches per epoch
         plt.figure()
@@ -102,6 +114,6 @@ class Orchestrator():
         plt.legend()
         plt.show()
 
-test = Orchestrator(150, .01, 248, 700) 
+test = Orchestrator(53, .01, 248, 700) 
 test.train()
 test.plot_scores()

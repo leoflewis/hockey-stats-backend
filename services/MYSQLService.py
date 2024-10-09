@@ -588,6 +588,7 @@ class MYSQLConnection(IMYSQLService):
         try:
             self.Connect()
             self.cursor.execute(query, vals)
+            self.db.commit()
         except Exception as error:
             print(error)
             print(type(error))

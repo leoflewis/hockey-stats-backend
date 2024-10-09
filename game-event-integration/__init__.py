@@ -10,5 +10,7 @@ from services.MYSQLService import MYSQLConnection
 
 def main(mytimer: func.TimerRequest) -> None:
     logging.info('Starting app')
+    logging.info(os.getcwd())
+    logging.info(os.listdir())
     processor = ProcessGameEvents(MYSQLConnection())
     processor.ProcessSeason()

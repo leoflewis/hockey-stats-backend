@@ -1,15 +1,18 @@
-import sklearn, numpy, math, pandas
-from joblib import load
+import sklearn, numpy as np, math, pandas, torch
+import sys, os
 from interfaces.IModel import IModel
 
 class GamePredictionModel(IModel):
     def __init__(self):
-        self.model = load('gamePrediction.joblib')
-        self.predictors = ["homexGDiff", "awayxGdiff",  "homeShotDiff",  "awayShotDiff",  "homeFenDiff",  "awayFenDiff",  "homeGoalDiff",  "awayGoalDiff"]
-    
+        self.model = torch.jit.load('GamePredictions-53Epochs-Sampled.pt')
+
     def Predict(self, params:tuple) -> float:
-        homexGDiffToDate, awayxGDiffToDate, homeShotDiffToDate, awayShotDiffToDate, homefenDiffToDate,awayFenDiffToDate, homeGoalDiffToDate, awayGoalDiffToDate = params
-        stats = [[homexGDiffToDate, awayxGDiffToDate, homeShotDiffToDate, awayShotDiffToDate, homefenDiffToDate, awayFenDiffToDate, homeGoalDiffToDate, awayGoalDiffToDate]]
-        new_df = pandas.DataFrame(stats, columns=self.predictors)
-        pred = self.model.predict_proba(new_df)
-        return float(round(pred[0][0], 2))
+        with torch.no_grad():
+            homexGDiffToDate, awayxGDiffToDate, homeShotDiffToDate, awayShotDiffToDate, homefenDiffToDate,awayFenDiffToDate, homeGoalDiffToDate, awayGoalDiffToDate = params
+            mean = np.load('mean.npy')
+            stdev = np.load('stddev.npy')
+            x = (np.array([homexGDiffToDate, awayxGDiffToDate, homeShotDiffToDate, awayShotDiffToDate, homefenDiffToDate,awayFenDiffToDate, homeGoalDiffToDate, awayGoalDiffToDate]) - mean) / stdev
+            x = torch.from_numpy(x).float().to('cpu')
+            pred = self.model(x)
+            print(pred)
+            return float(round(pred.item(), 2))

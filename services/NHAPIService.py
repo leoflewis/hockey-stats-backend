@@ -5,7 +5,7 @@ class NHLApi():
         pass
 
     def GetTodayGames(self) -> dict:
-        today = datetime.now()
+        today = datetime.now().strftime('%Y-%m-%d')
         return requests.get("https://api-web.nhle.com/v1/schedule/{}".format(today)).json()
 
     def GetYesterdayGames(self, date: datetime = None) -> dict:
