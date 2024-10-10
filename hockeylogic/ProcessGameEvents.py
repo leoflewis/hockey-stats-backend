@@ -8,7 +8,6 @@ class ProcessGameEvents():
         self.mysql = sql
         self.nhl = NHLApi()
         self.xg = XGModel()
-
     
     def ProcessSeason(self, date: datetime = None):
         season = self.nhl.GetYesterdayGames(date)

@@ -1,7 +1,4 @@
 import sys, os
-os.chdir("..")
-sys.path.append(os.getcwd())
-
 import logging
 import azure.functions as func
 from datetime import datetime
@@ -10,7 +7,5 @@ from services.MYSQLService import MYSQLConnection
 
 def main(mytimer: func.TimerRequest) -> None:
     logging.info('Starting app')
-    logging.info(os.getcwd())
-    logging.info(os.listdir())
     processor = ProcessGameEvents(MYSQLConnection())
     processor.ProcessSeason()
