@@ -3,7 +3,6 @@ from joblib import load
 
 class XGModel():
     def __init__(self):
-        function_dir = os.path.dirname(os.path.realpath(__file__))
         self.model = load('xG.joblib') 
         self.predictors = ['xC', 'yC', 'Rebound', 'Power Play', 'Type_', 'Type_BACKHAND', 'Type_DEFLECTED', 'Type_SLAP SHOT', 'Type_SNAP SHOT', 'Type_TIP-IN', 'Type_WRAP-AROUND', 'Type_WRIST SHOT', 'Angle_Radians', 'Angle_Degrees', 'Distance']
 
