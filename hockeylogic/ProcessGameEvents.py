@@ -190,7 +190,11 @@ class ProcessGameEvents():
                     x = x * -1
                     y = y * -1
 
-                shottype = play['details']['shotType']                 
+                if ('shotType' in play['details']):
+                    shottype = play['details']['shotType']
+                else:
+                    shottype = ''
+
                 if period == prev_period and prev_ev_team == play['details']['eventOwnerTeamId'] and prev_play in ['goal', 'shot', 'missed-shot'] and time - prev_time > 300:
                     rebound = True
                 else:
