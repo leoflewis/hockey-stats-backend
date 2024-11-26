@@ -32,6 +32,24 @@ class GamePredictionEngine():
 
                 self.sql.InsertGameWithPrediction(gameId, result, self.season, self.today)
 
+    def PredictGame(self, game):
+        gameId = game[0]
+        self.today = game[1]
+        self.season = game[2]
+        self.homeTeamId = game[3]
+        self.awayTeamId = game[4]
+        homexGDiffToDate, awayxGDiffToDate = self.GetXG()
+                
+        homeShotDiffToDate, awayShotDiffToDate = self.GetShots()
+        
+        homeGoalDiffToDate, awayGoalDiffToDate = self.GetGoals()
+        
+        homefenDiffToDate, awayFenDiffToDate = self.GetFenwick()
+        
+        result = self.model.Predict((homexGDiffToDate, awayxGDiffToDate, homeShotDiffToDate, awayShotDiffToDate, homeGoalDiffToDate, awayGoalDiffToDate, homefenDiffToDate, awayFenDiffToDate))
+
+        self.sql.InsertGameWithPrediction(gameId, result, self.season, self.today)
+
     def ProduceParameters(self, game):
         gameId = game[0]
         self.today = game[1]

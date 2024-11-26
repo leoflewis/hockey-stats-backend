@@ -20,6 +20,7 @@ class ProcessGameEvents():
         self.mysql.Close()
 
     def ProcessGame(self, gameId):
+        print(gameId)
         game = self.nhl.GetGamePlays(gameId)
         awayName = game['awayTeam']['abbrev']
         homeName = game['homeTeam']['abbrev']
@@ -143,7 +144,7 @@ class ProcessGameEvents():
         if EventName == 'shot-on-goal': EventName = 'SHOT'
         if EventName == 'goal': EventName = 'GOAL'
         if EventName == 'missed-shot': EventName = 'MISSED_SHOT'
-        self.mysql.InsertGameEvent(EventID, EventName, gameId, self.seasonId, PeriodTime, PeriodTimeRemaining, period, origX, origY, xG, Player1, Player2, Player3, Goalie, shotype, eventTeam, concededTeam, self.homeShots, self.awayShots, round(self.home_xG, 2), round(self.away_xG, 2))
+        self.mysql.InsertGameEvent(EventID, EventName, gameId, self.seasonId, PeriodTime, PeriodTimeRemaining, period, origX, origY, float(xG), Player1, Player2, Player3, Goalie, shotype, eventTeam, concededTeam, self.homeShots, self.awayShots, float(round(self.home_xG, 2)), float(round(self.away_xG, 2)))
 
     def ProcessGameForAPI(self, gameId):
         gameData = self.nhl.GetGamePlays(gameId)

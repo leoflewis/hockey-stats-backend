@@ -15,6 +15,7 @@ class MYSQLConnection(IMYSQLService):
             port=3306
         )
         self.cursor = self.db.cursor()
+        self.db.start_transaction()
 
     def Connected(self) -> bool:
         try:
@@ -25,6 +26,7 @@ class MYSQLConnection(IMYSQLService):
             return False
 
     def Close(self):
+        self.cursor.close()
         self.db.close()
 
     def InsertSeason(self, seasonId) -> bool:
@@ -97,6 +99,7 @@ class MYSQLConnection(IMYSQLService):
             self.db.commit()
             self.Close()
         except mysql.connector.errors.IntegrityError:
+            self.Close()
             return self.UpdateGameDetails(seasonId, homeTeamId, awayTeamId, date, homeScore, awayScore, homeXG, awayXG, homeShots, awayShots, gameType, homeWin, gameId)
         return True        
         
@@ -119,7 +122,11 @@ class MYSQLConnection(IMYSQLService):
             self.cursor.execute(sql, vals)
             self.db.commit()
         except mysql.connector.errors.IntegrityError:
-            pass
+            print("\tEvent Exists")
+        except Exception as e:
+            print(e)
+            print(vals)
+            input("")
         finally:
             self.Close()
             return True
@@ -638,6 +645,20 @@ class MYSQLConnection(IMYSQLService):
         try:
             self.Connect()
             self.cursor.execute(query, vals)
+            data = self.cursor.fetchall()
+        except Exception as error:
+            print(error)
+            print(type(error))
+        self.Close()
+        return data
+    
+    def GetBlankGames(self):
+        query = """SELECT GameId FROM Game 
+                    WHERE season = '20242025' and HomeScore IS NULL and AwayScore IS NULL
+                    ORDER BY GameDate DESC;"""
+        try:
+            self.Connect()
+            self.cursor.execute(query)
             data = self.cursor.fetchall()
         except Exception as error:
             print(error)
