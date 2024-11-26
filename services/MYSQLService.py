@@ -582,7 +582,7 @@ class MYSQLConnection(IMYSQLService):
         return data 
 
     def GetUnPredictedGames20232024(self):
-        query = "SELECT GameId, GameDate, season, HomeTeam, AwayTeam FROM Game WHERE Season = 20232024 AND HomeWinProba IS NULL ORDER BY GameId;"
+        query = "SELECT GameId, GameDate, season, HomeTeam, AwayTeam FROM Game WHERE Season = 20242025 AND HomeWinProba IS NULL ORDER BY GameId;"
         self.Connect()
         self.cursor.execute(query)
         data = self.cursor.fetchall()
