@@ -56,3 +56,27 @@ class IMYSQLService():
 
     def InsertGameWithPrediction(self, gameId, winProbability, seasonId, date):
         pass
+
+    def GetPlayersNotUpdatedInTwoDays(self, season, date):
+        return [8470595,
+                8470600,
+                8470604,
+                8470610,
+                8470613,
+                8470621,
+                8470638,
+                8470794,
+                8470966,
+                8471214,
+                8471215,
+                8471218,
+                8471274]
+
+    def UpdateSeasonTotal(self, seasonTotal: dict, playerId, date: str):
+        vals = (seasonTotal['assists'], seasonTotal['goals'], seasonTotal['pim'], seasonTotal['shots'], seasonTotal['gamesPlayed'], seasonTotal['powerPlayGoals'],
+                seasonTotal['powerPlayPoints'], round(seasonTotal['faceoffWinningPctg'], 2), round(seasonTotal['shootingPctg'], 2), seasonTotal['otGoals'], seasonTotal['shorthandedGoals'],
+                seasonTotal['shorthandedPoints'], seasonTotal['plusMinus'],
+                seasonTotal['points'], date, seasonTotal['avgToi'], seasonTotal['gameWinningGoals'],
+                playerId, seasonTotal['season']
+            )
+        print(vals)

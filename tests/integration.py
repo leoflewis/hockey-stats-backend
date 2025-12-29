@@ -16,4 +16,4 @@ games = sql.GetUnPredictedGames20232024()
 
 for game in games:
     print(game)
-    #processor.PredictGame(game)
+    processor.PredictGame(game)

@@ -254,7 +254,13 @@ class MYSQLConnection(IMYSQLService):
         return json_data
     
     def GetAveragesAndStDevForSeason(self, seasonId) -> list:
-        query = "SELECT AVG(Assists), AVG(Goals), AVG(PenMinutes), AVG(Shots), AVG(GamesPlayed), AVG(Hits), AVG(PPGoals), AVG(PPPoints), AVG(PPTOI), AVG(EVTOI), AVG(FOPct), AVG(ShotPct), AVG(GWGoals), AVG(OTGoals), AVG(SHGoals), AVG(SHPoints), AVG(SHTOI), AVG(Blocks), AVG(PlusMinus), AVG(Points), AVG(Shifts), stddev(Assists), stddev(Goals), stddev(PenMinutes), stddev(Shots), stddev(GamesPlayed), stddev(Hits), stddev(PPGoals), stddev(PPPoints), stddev(PPTOI), stddev(EVTOI), stddev(FOPct), stddev(ShotPct), stddev(GWGoals), stddev(OTGoals), stddev(SHGoals), stddev(SHPoints), stddev(SHTOI), stddev(Blocks), stddev(PlusMinus), stddev(Points), stddev(Shifts) FROM SeasonTotals WHERE Season = %s;"
+        query = """
+        SELECT 
+        AVG(Assists), AVG(Goals), AVG(PenMinutes), AVG(Shots), AVG(GamesPlayed), AVG(PPGoals), AVG(PPPoints), 
+        AVG(FOPct), AVG(ShotPct), AVG(GWGoals), AVG(OTGoals), AVG(SHGoals), AVG(SHPoints), AVG(PlusMinus), AVG(Points), 
+        stddev(Assists), stddev(Goals), stddev(PenMinutes), stddev(Shots), stddev(GamesPlayed), stddev(PPGoals), stddev(PPPoints), 
+        stddev(FOPct), stddev(ShotPct), stddev(GWGoals), stddev(OTGoals), stddev(SHGoals), stddev(SHPoints), stddev(PlusMinus), stddev(Points) FROM SeasonTotals
+        WHERE Season = %s;"""
         vals = (seasonId,)
         self.Connect()
         self.cursor.execute(query, vals)
@@ -267,7 +273,13 @@ class MYSQLConnection(IMYSQLService):
         return json_data
     
     def GetPlayerTotalsForSeason(self, playerId, seasonId) -> list:
-        query = "SELECT sum(Assists) as Assists, sum(Goals) as Goals, sum(PenMinutes) as PenMinutes, sum(Shots) as Shots, sum(GamesPlayed) as GamesPlayed, sum(Hits) as Hits, sum(PPGoals) as PPGoals, sum(PPPoints) as PPPoints, sum(PPTOI) as PPTOI, sum(EVTOI) as EVTOI, sum(FOPct) as FOPct, sum(ShotPct) as ShotPct, sum(GWGoals) as GWGoals, sum(OTGoals) as OTGoals, sum(SHGoals) as SHGoals, sum(SHPoints) as SHPoints, sum(SHTOI) as SHTOI, sum(Blocks) as Blocks, sum(PlusMinus) as PlusMinus, sum(Points) as Points, sum(Shifts) as Shifts FROM seasontotals WHERE Season = %s and PlayerId = %s;"
+        query = """
+        SELECT sum(Assists) as Assists, sum(Goals) as Goals, sum(PenMinutes) as PenMinutes, sum(Shots) as Shots, 
+        sum(GamesPlayed) as GamesPlayed, sum(PPGoals) as PPGoals, sum(PPPoints) as PPPoints, sum(FOPct) as FOPct, 
+        sum(ShotPct) as ShotPct, sum(GWGoals) as GWGoals, sum(OTGoals) as OTGoals, 
+        sum(SHGoals) as SHGoals, sum(SHPoints) as SHPoints, sum(PlusMinus) as PlusMinus, 
+        sum(Points) as Points FROM seasontotals 
+        WHERE Season = %s and PlayerId = %s;"""
         vals = (seasonId, playerId)
         self.Connect()
         self.cursor.execute(query, vals)
@@ -364,13 +376,17 @@ class MYSQLConnection(IMYSQLService):
     def GetSkatersTableData(self, seasonId) -> dict:
         json_data = []
         vals = (seasonId,seasonId)
-        query = """SELECT xGTable.PlayerName, sum(TOI) as TOI, sum(Points) as Points, sum(Shots) as Shots, sum(Assists) as Apples, sum(Goals) as Genos, xGTable.xG, sum(PenMinutes) as PenM, sum(GamesPlayed) as GP, sum(Hits) as Hits, sum(PPGoals) as PPG, sum(PPPoints) as PPP, sum(PPTOI) as PPTOI, sum(EVTOI) as EVTOI, sum(FOPct) as FOPCT, sum(ShotPct) as SPct, sum(GWGoals) as GWG, sum(OTGoals) as OTG, sum(SHGoals) as SHG, sum(SHPoints) as SHP, sum(SHTOI) as SHTOI, sum(Blocks) as Blocks, sum(PlusMinus) as PM, sum(Shifts) as shifts  FROM seasontotals
+        query = """
+            SELECT xGTable.PlayerName, sum(Points) as Points, sum(Shots) as Shots, sum(Assists) as Apples, sum(Goals) as Genos, xGTable.xG, sum(PenMinutes) as PenM, 
+            sum(GamesPlayed) as GP, sum(PPGoals) as PPG, sum(PPPoints) as PPP, 
+            sum(FOPct) as FOPCT, sum(ShotPct) as SPct, sum(GWGoals) as GWG, sum(OTGoals) as OTG, sum(SHGoals) as SHG, sum(SHPoints) as SHP, 
+            sum(PlusMinus) as PM FROM seasontotals
             JOIN (SELECT sum(gameevent.xG) as xG, Player.PlayerId as PlayerId, Player.PlayerName as PlayerName
-	        FROM gameevent Join Player on gameevent.Player1 = Player.PlayerId WHERE Period < 5 AND Season = %s
-	        group by Player1) as xGTable on xGTable.PlayerId = seasontotals.PlayerId
+            FROM gameevent Join Player on gameevent.Player1 = Player.PlayerId WHERE Period < 5 AND Season = %s
+            group by Player1) as xGTable on xGTable.PlayerId = seasontotals.PlayerId
             WHERE Season = %s
             Group by seasontotals.PlayerId
-            Order by Points Desc;
+            Order by Points Desc
         """
         self.Connect()
         self.cursor.execute(query, vals)
@@ -665,3 +681,41 @@ class MYSQLConnection(IMYSQLService):
             print(type(error))
         self.Close()
         return data
+
+    def GetPlayersNotUpdatedInTwoDays(self, season, date):
+        query = """
+                SELECT PlayerId FROM seasontotals
+                WHERE Season = %s AND DATEDIFF(%s, last_updated) > 1;
+                """
+        vals = (season, date)
+        try:
+            self.Connect()
+            self.cursor.execute(query, vals)
+            data = self.cursor.fetchall()
+        except Exception as error:
+            print(error)
+            print(type(error))
+        self.Close()
+        return data
+
+    def UpdateSeasonTotal(self, seasonTotal: dict, playerId, date: str):
+        query = """
+                    UPDATE seasontotals 
+                    SET Assists = %s, Goals = %s, PenMinutes = %s, Shots = %s, GamesPlayed = %s, PPGoals = %s, 
+                        PPPoints = %s, FOPct = %s, ShotPct = %s, OTGoals = %s, SHGoals = %s, SHPoints = %s, PlusMinus = %s,
+                        Points = %s, last_Updated = %s, AVGToi = %s, GWGoals = %s
+                    WHERE PlayerId = %s and Season = %s;"""
+        vals = (seasonTotal['assists'], seasonTotal['goals'], seasonTotal['pim'], seasonTotal['shots'], seasonTotal['gamesPlayed'], seasonTotal['powerPlayGoals'],
+                seasonTotal['powerPlayPoints'], round(seasonTotal['faceoffWinningPctg'], 2), round(seasonTotal['shootingPctg'], 2), seasonTotal['otGoals'], seasonTotal['shorthandedGoals'],
+                seasonTotal['shorthandedPoints'], seasonTotal['plusMinus'],
+                seasonTotal['points'], date, float(seasonTotal['avgToi'].replace(':', '.')), seasonTotal['gameWinningGoals'],
+                playerId, seasonTotal['season']
+            )
+        try:
+            self.Connect()
+            self.cursor.execute(query, vals)
+            self.db.commit()
+        except Exception as error:
+            print(error)
+            print(type(error))
+        self.Close()

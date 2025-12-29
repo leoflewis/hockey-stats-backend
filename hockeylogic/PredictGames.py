@@ -45,10 +45,10 @@ class GamePredictionEngine():
         homeGoalDiffToDate, awayGoalDiffToDate = self.GetGoals()
         
         homefenDiffToDate, awayFenDiffToDate = self.GetFenwick()
-        
+
         result = self.model.Predict((homexGDiffToDate, awayxGDiffToDate, homeShotDiffToDate, awayShotDiffToDate, homeGoalDiffToDate, awayGoalDiffToDate, homefenDiffToDate, awayFenDiffToDate))
 
-        self.sql.InsertGameWithPrediction(gameId, result, self.season, self.today)
+        self.sql.UpdateGameWithPrediction(gameId, result)
 
     def ProduceParameters(self, game):
         gameId = game[0]
