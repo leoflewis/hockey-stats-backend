@@ -398,6 +398,7 @@ def scoreproxy():
                 print(gameDict)
                 for game in gameData['games']:
                     if game['id'] in gameDict.keys():
+                        if gameDict[game['id']] is None: break
                         homeWinProbability = float(gameDict[game['id']]) * 100
                         game['homeTeam']['winProbability'] = round(homeWinProbability, 2)
                         game['awayTeam']['winProbability'] = round((100 - homeWinProbability), 2)
