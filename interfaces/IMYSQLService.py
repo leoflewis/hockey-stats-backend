@@ -80,3 +80,6 @@ class IMYSQLService():
                 playerId, seasonTotal['season']
             )
         print(vals)
+
+    def InsertSeasonTotals(self, playerId, season):
+        pass

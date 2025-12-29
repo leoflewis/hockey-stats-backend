@@ -447,10 +447,10 @@ class MYSQLConnection(IMYSQLService):
         response = self.cursor.fetchall()
         row_headers = [x[0] for x in self.cursor.description]
         for result in response:
-            teamName = result[12]
+            teamName = result[9]
             if "," in teamName: teamName = teamName.split(",")[0]
             try:
-                value = (result[0], result[1], result[2], round(float(result[3] * 100), 3), round(float(result[4] * 100), 3), round(float(result[5] * 100), 3), round(float(result[6] * 100), 3), round(float(result[7] * 100), 3), round(float(result[8] * 100), 3), round(float(result[9] * 100), 3), round(float(result[10] * 100), 3), round(float(result[11] * 100), 3), teamName)
+                value = (result[0], result[1], result[2], round(float(result[3] * 100), 3), round(float(result[4] * 100), 3), round(float(result[5] * 100), 3), round(float(result[6] * 100), 3), round(float(result[7] * 100), 3), round(float(result[8] * 100), 3), teamName)
             except:
                 value = result
             json_data.append(dict(zip(row_headers,value)))
@@ -719,3 +719,18 @@ class MYSQLConnection(IMYSQLService):
             print(error)
             print(type(error))
         self.Close()
+
+    def InsertSeasonTotals(self, playerId, season):
+        vals = (playerId, season)
+        sql = "INSERT INTO SeasonTotals(PlayerId, Season) VALUES(%s, %s)"
+        try:
+            self.Connect()
+            self.cursor.execute(sql, vals)
+            self.db.commit()
+            self.Close()
+        except mysql.connector.errors.IntegrityError:
+            pass
+        except Exception:
+            return False
+        finally:
+            return True

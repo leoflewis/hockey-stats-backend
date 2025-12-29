@@ -7,5 +7,8 @@ from services.MYSQLService import MYSQLConnection
 
 def main(mytimer: func.TimerRequest) -> None:
     logging.info('Starting app')
-    processor = ProcessGameEvents(MYSQLConnection())
-    processor.ProcessSeason()
+    try:
+        processor = ProcessGameEvents(MYSQLConnection())
+        processor.ProcessSeason()
+    except Exception as ex:
+        logging.error("Error: %s", ex)

@@ -82,6 +82,7 @@ class ProcessGameEvents():
                 playername = playerDetails["firstName"]["default"] + " " + playerDetails["lastName"]["default"]
                 position = playerDetails["positionCode"]
                 self.mysql.InsertPlayer(player, playername, position)
+                self.mysql.InsertSeasonTotals(player, self.seasonId)
 
         eventTeam = play['details']['eventOwnerTeamId']
         EventName = play['typeDescKey']
