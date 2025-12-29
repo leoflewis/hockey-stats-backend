@@ -144,63 +144,45 @@ def calculate_z(json_data, player_data):
     avg_penm = float(json_data[0]['AVG(PenMinutes)'])
     avg_shots = float(json_data[0]['AVG(Shots)']) 
     avg_gp = float(json_data[0]['AVG(GamesPlayed)'])
-    avg_hits = float(json_data[0]['AVG(Hits)'])
     avg_ppg = float(json_data[0]['AVG(PPGoals)'])
     avg_ppp = float(json_data[0]['AVG(PPPoints)'])
-    avg_pptoi = float(json_data[0]['AVG(PPTOI)'])
-    avg_evtoi = float(json_data[0]['AVG(EVTOI)'])
     avg_spct = float(json_data[0]['AVG(ShotPct)'])
     avg_gwg = float(json_data[0]['AVG(GWGoals)'])
     avg_otg = float(json_data[0]['AVG(OTGoals)'])
     avg_shg = float(json_data[0]['AVG(SHGoals)'])
     avg_shp = float(json_data[0]['AVG(SHPoints)'])
-    avg_shtoi = float(json_data[0]['AVG(SHTOI)'])
-    avg_blocks = float(json_data[0]['AVG(Blocks)'])
     avg_points = float(json_data[0]['AVG(Points)'])
     avg_pm = float(json_data[0]['AVG(PlusMinus)'])
-    avg_shifts = float(json_data[0]['AVG(Shifts)'])
 
     std_assists = float(json_data[0]['stddev(Assists)'])
     std_goals = float(json_data[0]['stddev(Goals)'])
     std_penm = float(json_data[0]['stddev(PenMinutes)'])
     std_shots = float(json_data[0]['stddev(Shots)']) 
     std_gp = float(json_data[0]['stddev(GamesPlayed)'])
-    std_hits = float(json_data[0]['stddev(Hits)'])
     std_ppg = float(json_data[0]['stddev(PPGoals)'])
     std_ppp = float(json_data[0]['stddev(PPPoints)'])
-    std_pptoi = float(json_data[0]['stddev(PPTOI)'])
-    std_evtoi = float(json_data[0]['stddev(EVTOI)'])
     std_spct = float(json_data[0]['stddev(ShotPct)'])
     std_gwg = float(json_data[0]['stddev(GWGoals)'])
     std_otg = float(json_data[0]['stddev(OTGoals)'])
     std_shg = float(json_data[0]['stddev(SHGoals)'])
     std_shp = float(json_data[0]['stddev(SHPoints)'])
-    std_shtoi = float(json_data[0]['stddev(SHTOI)'])
-    std_blocks = float(json_data[0]['stddev(Blocks)'])
     std_points = float(json_data[0]['stddev(Points)'])
     std_pm = float(json_data[0]['stddev(PlusMinus)'])
-    std_shifts = float(json_data[0]['stddev(Shifts)'])
 
     assists = float(player_data[0]['Assists'])
     goals = float(player_data[0]['Goals'])
     penm = float(player_data[0]['PenMinutes'])
     shots = float(player_data[0]['Shots']) 
     gp = float(player_data[0]['GamesPlayed'])
-    hits = float(player_data[0]['Hits'])
     ppg = float(player_data[0]['PPGoals'])
     ppp = float(player_data[0]['PPPoints'])
-    pptoi = float(player_data[0]['PPTOI'])
-    evtoi = float(player_data[0]['EVTOI'])
     spct = float(player_data[0]['ShotPct'])
     gwg = float(player_data[0]['GWGoals'])
     otg = float(player_data[0]['OTGoals'])
     shg = float(player_data[0]['SHGoals'])
     shp = float(player_data[0]['SHPoints'])
-    shtoi = float(player_data[0]['SHTOI'])
-    blocks = float(player_data[0]['Blocks'])
     points = float(player_data[0]['Points'])
     pm = float(player_data[0]['PlusMinus'])
-    shifts = float(player_data[0]['Shifts'])
 
     z_scores = {}
     z_scores["Assists"] = (assists - avg_assists) / std_assists
@@ -208,21 +190,15 @@ def calculate_z(json_data, player_data):
     z_scores["PIMs"] = ((penm - avg_penm) / std_penm) * -1
     z_scores["Shots"] = (shots - avg_shots) / std_shots
     z_scores["Games"] = (gp - avg_gp) / std_gp
-    z_scores["Hits"] = (hits - avg_hits) / std_hits
     z_scores["PPGoals"] = (ppg - avg_ppg) / std_ppg
     z_scores["PPPoints"] = (ppp - avg_ppp) / std_ppp
-    z_scores["PPTOI"] = (pptoi - avg_pptoi) / std_pptoi
-    z_scores["EVTOI"] = (evtoi - avg_evtoi) / std_evtoi
     z_scores["Spct"] = (spct - avg_spct) / std_spct
     z_scores["GWG"] = (gwg - avg_gwg) / std_gwg
     z_scores["OTG"] = (otg - avg_otg) / std_otg
     z_scores["SHG"] = (shg - avg_shg) / std_shg
     z_scores["SHP"] = (shp - avg_shp) / std_shp
-    z_scores["SHTOI"] = (shtoi - avg_shtoi) / std_shtoi
-    z_scores["Blocks"] = (blocks - avg_blocks) / std_blocks
     z_scores["Points"] = (points - avg_points) / std_points
     z_scores["PM"] = (pm - avg_pm) / std_pm
-    z_scores["Shifts"] = (shifts - avg_shifts) / std_shifts
     return z_scores
 
 @app.route("/player")
@@ -240,6 +216,7 @@ def player():
         shots = format_shots(pre_shots)
         return jsonify({"message": {"data": z_scores, "shots": shots}})
     except Exception as err:
+        print(err)
         return jsonify({"message": "There was an error: {}".format(type(err))})
 
 @app.route("/goalie")
