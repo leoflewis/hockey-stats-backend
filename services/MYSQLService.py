@@ -448,7 +448,7 @@ class MYSQLConnection(IMYSQLService):
         row_headers = [x[0] for x in self.cursor.description]
         for result in response:
             teamName = result[9]
-            if "," in teamName: teamName = teamName.split(",")[0]
+            #if "," in teamName: teamName = teamName.split(",")[0]
             try:
                 value = (result[0], result[1], result[2], round(float(result[3] * 100), 3), round(float(result[4] * 100), 3), round(float(result[5] * 100), 3), round(float(result[6] * 100), 3), round(float(result[7] * 100), 3), round(float(result[8] * 100), 3), teamName)
             except:
@@ -698,18 +698,18 @@ class MYSQLConnection(IMYSQLService):
         self.Close()
         return data
 
-    def UpdateSeasonTotal(self, seasonTotal: dict, playerId, date: str):
+    def UpdateSeasonTotal(self, seasonTotal: dict, playerId, date: str, team):
         query = """
                     UPDATE seasontotals 
                     SET Assists = %s, Goals = %s, PenMinutes = %s, Shots = %s, GamesPlayed = %s, PPGoals = %s, 
                         PPPoints = %s, FOPct = %s, ShotPct = %s, OTGoals = %s, SHGoals = %s, SHPoints = %s, PlusMinus = %s,
                         Points = %s, last_Updated = %s, AVGToi = %s, GWGoals = %s
-                    WHERE PlayerId = %s and Season = %s;"""
+                    WHERE PlayerId = %s and Season = %s and TeamId = %s;"""
         vals = (seasonTotal['assists'], seasonTotal['goals'], seasonTotal['pim'], seasonTotal['shots'], seasonTotal['gamesPlayed'], seasonTotal['powerPlayGoals'],
                 seasonTotal['powerPlayPoints'], round(seasonTotal['faceoffWinningPctg'], 2), round(seasonTotal['shootingPctg'], 2), seasonTotal['otGoals'], seasonTotal['shorthandedGoals'],
                 seasonTotal['shorthandedPoints'], seasonTotal['plusMinus'],
                 seasonTotal['points'], date, float(seasonTotal['avgToi'].replace(':', '.')), seasonTotal['gameWinningGoals'],
-                playerId, seasonTotal['season']
+                playerId, seasonTotal['season'], team
             )
         try:
             self.Connect()
@@ -720,9 +720,9 @@ class MYSQLConnection(IMYSQLService):
             print(type(error))
         self.Close()
 
-    def InsertSeasonTotals(self, playerId, season):
-        vals = (playerId, season)
-        sql = "INSERT INTO SeasonTotals(PlayerId, Season) VALUES(%s, %s)"
+    def InsertSeasonTotals(self, playerId, season, team):
+        vals = (playerId, season, team)
+        sql = "INSERT INTO SeasonTotals(PlayerId, Season, TeamId) VALUES(%s, %s, %s)"
         try:
             self.Connect()
             self.cursor.execute(sql, vals)

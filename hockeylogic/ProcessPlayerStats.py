@@ -1,7 +1,7 @@
 from interfaces.IMYSQLService import IMYSQLService
 from services.NHAPIService import NHLApi
 from datetime import datetime
-from hockeylogic.Utils import FormatSeason
+from hockeylogic.Utils import FormatSeason, GetTeamIdFromName
 
 class ProcessPlayerStats():
     
@@ -20,15 +20,15 @@ class ProcessPlayerStats():
     def ProcessPlayer(self, playerId: str, season: str, date: str):
         playerData = self.nhl.GetPlayerLanding(playerId)
         seasonTotals = playerData['seasonTotals']
-        currenTotal = ''
+        currentTotal = ''
         for seasonTotal in seasonTotals:
-            
             if seasonTotal['gameTypeId'] == 2 and str(seasonTotal['season']) == season and seasonTotal['leagueAbbrev'] == 'NHL':
-                currenTotal = seasonTotal
-                break
-
-        print(currenTotal)
-        self.mysql.UpdateSeasonTotal(currenTotal, playerId, date)
+                currentTotal = seasonTotal
+                print(currentTotal)
+                print(currentTotal['teamName']['default'])
+                team = GetTeamIdFromName(currentTotal['teamName']['default'])
+                self.mysql.UpdateSeasonTotal(currentTotal, playerId, date, team)
+        
         print('\n')
 
 

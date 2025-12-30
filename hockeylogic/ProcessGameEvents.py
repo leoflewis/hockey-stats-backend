@@ -76,15 +76,17 @@ class ProcessGameEvents():
         EventID = str(gameId) + str(play['sortOrder'])
         Goalie, Player1, Player2, Player3 = self.GetPlayers(play['details'])
 
+        eventTeam = play['details']['eventOwnerTeamId']
+
         for player in [Player1, Player2, Player3, Goalie]:
             if player is not None:
                 playerDetails = self.players[player]
                 playername = playerDetails["firstName"]["default"] + " " + playerDetails["lastName"]["default"]
                 position = playerDetails["positionCode"]
                 self.mysql.InsertPlayer(player, playername, position)
-                self.mysql.InsertSeasonTotals(player, self.seasonId)
+                self.mysql.InsertSeasonTotals(player, self.seasonId, eventTeam)
 
-        eventTeam = play['details']['eventOwnerTeamId']
+        
         EventName = play['typeDescKey']
         PeriodTime = play['timeInPeriod']
         PeriodTimeRemaining = play['timeRemaining']

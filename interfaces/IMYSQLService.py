@@ -72,14 +72,13 @@ class IMYSQLService():
                 8471218,
                 8471274]
 
-    def UpdateSeasonTotal(self, seasonTotal: dict, playerId, date: str):
+    def UpdateSeasonTotal(self, seasonTotal: dict, playerId, date: str, team):
         vals = (seasonTotal['assists'], seasonTotal['goals'], seasonTotal['pim'], seasonTotal['shots'], seasonTotal['gamesPlayed'], seasonTotal['powerPlayGoals'],
                 seasonTotal['powerPlayPoints'], round(seasonTotal['faceoffWinningPctg'], 2), round(seasonTotal['shootingPctg'], 2), seasonTotal['otGoals'], seasonTotal['shorthandedGoals'],
                 seasonTotal['shorthandedPoints'], seasonTotal['plusMinus'],
                 seasonTotal['points'], date, seasonTotal['avgToi'], seasonTotal['gameWinningGoals'],
-                playerId, seasonTotal['season']
-            )
+                playerId, seasonTotal['season'], team)
         print(vals)
 
-    def InsertSeasonTotals(self, playerId, season):
+    def InsertSeasonTotals(self, playerId, season, team):
         pass
